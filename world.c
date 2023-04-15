@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "world.h"
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
 SDL_Surface* load_bitmap(const char* file_path);

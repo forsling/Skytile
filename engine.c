@@ -184,5 +184,40 @@ void render_world(World* world, int window_width, int window_height) {
               0.0f, 0.0f, 1.0f);
 
     // Render the world
-    // TODO: Render textured quads for the floor, ceiling, and walls based on the world map
+    for (int y = 0; y < world->height; y++) {
+        for (int x = 0; x < world->width; x++) {
+            CellDefinition* cell = &world->cells[y][x];
+            float xPos = x;
+            float yPos = y;
+            float zPos = 0;
+
+            switch (cell->type) {
+                case CELL_VOID:
+                    // Render a transparent quad
+                    break;
+                case CELL_SOLID:
+                    // Render wall texture
+                    render_textured_quad(cell->wall_texture, xPos, yPos, zPos, 1.0f, 1.0f);
+                    break;
+                case CELL_OPEN:
+                    // Render floor texture
+                    render_textured_quad(cell->floor_texture, xPos, yPos, zPos, 1.0f, 1.0f);
+                    // Render ceiling texture
+                    render_textured_quad(cell->ceiling_texture, xPos, yPos, zPos + 1.0f, 1.0f, 1.0f);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+void render_textured_quad(GLuint texture, float x, float y, float z, float width, float height) {
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f(x, y, z);
+        glTexCoord2f(1, 0); glVertex3f(x + width, y, z);
+        glTexCoord2f(1, 1); glVertex3f(x + width, y + height, z);
+        glTexCoord2f(0, 1); glVertex3f(x, y + height, z);
+    glEnd();
 }
