@@ -15,7 +15,8 @@ bool load_engine_assets();
 void free_engine_assets();
 void render_world(World* world);
 void render_textured_quad(GLuint texture, float x, float y, float z, float width, float height);
-void process_input(const Uint8* keystate);
+void process_input();
+void process_mouse();
 
 typedef struct {
     float x, y, z; // Position

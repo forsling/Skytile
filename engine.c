@@ -84,6 +84,8 @@ void main_loop() {
     bool quit = false;
     SDL_Event event;
 
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+
     while (!quit) {
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
@@ -91,46 +93,65 @@ void main_loop() {
             }
         }
 
+        process_input();
+        process_mouse();
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         render_world(&world);
 
         SDL_GL_SwapWindow(window);
     }
+
+    SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
-void process_input(const Uint8* keystate) {
-    // Update player rotation based on mouse input
-    int mouse_x_rel, mouse_y_rel;
-    SDL_GetRelativeMouseState(&mouse_x_rel, &mouse_y_rel);
-    player.yaw -= mouse_x_rel * 0.002f; // Adjust this value to set the mouse sensitivity
-    player.pitch -= mouse_y_rel * 0.002f;
+void process_input() {
+    const Uint8* state = SDL_GetKeyboardState(NULL);
 
-    // Update player position based on keyboard input
-    float move_x = 0.0f, move_y = 0.0f;
-    if (keystate[SDL_SCANCODE_W]) {
-        move_x += cosf(player.yaw) * player.speed;
-        move_y += sinf(player.yaw) * player.speed;
+    float dx = 0.0f;
+    float dy = 0.0f;
+    float dz = 0.0f;
+
+    if (state[SDL_SCANCODE_W]) {
+        dx += cosf(player.yaw);
+        dy += sinf(player.yaw);
     }
-    if (keystate[SDL_SCANCODE_S]) {
-        move_x -= cosf(player.yaw) * player.speed;
-        move_y -= sinf(player.yaw) * player.speed;
+    if (state[SDL_SCANCODE_S]) {
+        dx -= cosf(player.yaw);
+        dy -= sinf(player.yaw);
     }
-    if (keystate[SDL_SCANCODE_A]) {
-        move_x -= sinf(player.yaw) * player.speed;
-        move_y += cosf(player.yaw) * player.speed;
+    if (state[SDL_SCANCODE_A]) {
+        dx -= sinf(player.yaw);
+        dy += cosf(player.yaw);
     }
-    if (keystate[SDL_SCANCODE_D]) {
-        move_x += sinf(player.yaw) * player.speed;
-        move_y -= cosf(player.yaw) * player.speed;
+    if (state[SDL_SCANCODE_D]) {
+        dx += sinf(player.yaw);
+        dy -= cosf(player.yaw);
+    }
+    if (state[SDL_SCANCODE_SPACE]) {
+        dz += 1.0f;
+    }
+    if (state[SDL_SCANCODE_LSHIFT]) {
+        dz -= 1.0f;
     }
 
-    // Check for collisions and update player position
-    // TODO: Implement proper collision detection
-    player.x += move_x;
-    player.y += move_y;
+    player.x += dx * player.speed;
+    player.y += dy * player.speed;
+    player.z += dz * player.speed;
 }
 
+void process_mouse() {
+    int mouseX, mouseY;
+    SDL_GetRelativeMouseState(&mouseX, &mouseY);
+
+    const float MOUSE_SENSITIVITY = 0.001f;
+    player.yaw -= mouseX * MOUSE_SENSITIVITY; // negate the value here
+    player.pitch += mouseY * MOUSE_SENSITIVITY; // and here
+
+    if (player.pitch < -M_PI / 2) player.pitch = -M_PI / 2;
+    if (player.pitch > M_PI / 2) player.pitch = M_PI / 2;
+}
 
 void cleanup_engine() {
     free_engine_assets();
