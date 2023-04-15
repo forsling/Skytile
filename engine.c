@@ -184,6 +184,8 @@ void render_world(World* world, int window_width, int window_height) {
               0.0f, 0.0f, 1.0f);
 
     // Render the world
+
+    
     for (int y = 0; y < world->height; y++) {
         for (int x = 0; x < world->width; x++) {
             CellDefinition* cell = &world->cells[y][x];
@@ -202,6 +204,7 @@ void render_world(World* world, int window_width, int window_height) {
                 case CELL_OPEN:
                     // Render floor texture
                     render_textured_quad(cell->floor_texture, xPos, yPos, zPos, 1.0f, 1.0f);
+
                     // Render ceiling texture
                     render_textured_quad(cell->ceiling_texture, xPos, yPos, zPos + 1.0f, 1.0f, 1.0f);
                     break;
@@ -221,3 +224,4 @@ void render_textured_quad(GLuint texture, float x, float y, float z, float width
         glTexCoord2f(0, 1); glVertex3f(x, y + height, z);
     glEnd();
 }
+

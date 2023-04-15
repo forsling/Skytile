@@ -16,10 +16,6 @@ bool load_world(const char* file_path, World* world, SDL_Renderer* renderer) {
     parse_world_from_surface(surface, world, renderer);
     SDL_FreeSurface(surface);
 
-    world->wall_texture = load_texture("assets/grey_brick1.bmp");
-    world->floor_texture = load_texture("assets/stone_floor1.bmp");
-    world->ceiling_texture = load_texture("assets/marble_pattern1.bmp");
-
     return true;
 }
 
@@ -92,34 +88,59 @@ CellDefinition get_cell_definition_from_color(SDL_Color color, SDL_Renderer* ren
     if (color.r == 0xFF && color.g == 0x00 && color.b == 0xFF) {
         cell_def.type = CELL_SOLID;
         cell_def.color = color;
-        cell_def.floor_texture = NULL;
-        cell_def.ceiling_texture = NULL;
-        cell_def.wall_texture = NULL;
+        cell_def.floor_texture = 0;
+        cell_def.ceiling_texture = 0;
+        cell_def.wall_texture = 0;
     }
     // #404040 - Solid with grey brick texture
     else if (color.r == 0x40 && color.g == 0x40 && color.b == 0x40) {
         cell_def.type = CELL_SOLID;
         cell_def.color = color;
-        cell_def.floor_texture = NULL;
-        cell_def.ceiling_texture = NULL;
-        cell_def.wall_texture = IMG_LoadTexture(renderer, "assets/grey_brick1.bmp");
+        cell_def.floor_texture = 0;
+        cell_def.ceiling_texture = 0;
+        cell_def.wall_texture = loadTexture("assets/grey_brick1.bmp");
     }
     // #808080 - Open with stone floor and marble pattern ceiling textures
     else if (color.r == 0x80 && color.g == 0x80 && color.b == 0x80) {
         cell_def.type = CELL_OPEN;
         cell_def.color = color;
-        cell_def.floor_texture = IMG_LoadTexture(renderer, "assets/stone_floor1.bmp");
-        cell_def.ceiling_texture = IMG_LoadTexture(renderer, "assets/marble_pattern1.bmp");
-        cell_def.wall_texture = NULL;
+        cell_def.floor_texture = loadTexture("assets/stone_floor1.bmp");
+        cell_def.ceiling_texture = loadTexture("assets/marble_pattern1.bmp");
+        cell_def.wall_texture = 0;
     }
     // Default - Open and transparent (no textures)
     else {
         cell_def.type = CELL_OPEN;
         cell_def.color = color;
-        cell_def.floor_texture = NULL;
-        cell_def.ceiling_texture = NULL;
-        cell_def.wall_texture = NULL;
+        cell_def.floor_texture = 0;
+        cell_def.ceiling_texture = 0;
+        cell_def.wall_texture = 0;
     }
 
     return cell_def;
+}
+
+GLuint loadTexture(const char *filename) {
+    SDL_Surface *image = IMG_Load(filename);
+    if (!image) {
+        printf("Error: %s\n", IMG_GetError());
+        return 0;
+    }
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GLenum format = (image->format->BytesPerPixel == 4) ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, image->w, image->h, 0, format, GL_UNSIGNED_BYTE, image->pixels);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    SDL_FreeSurface(image);
+
+    return texture;
 }
