@@ -12,6 +12,7 @@ const int SCREEN_HEIGHT = 600;
 
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
+SDL_GLContext gl_context = NULL;
 
 World world;
 Player player;
@@ -22,18 +23,26 @@ bool init_engine() {
         return false;
     }
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+
     window = SDL_CreateWindow("Game Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                              SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+                              SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
     if (window == NULL) {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return false;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (renderer == NULL) {
-        printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    if (gl_context == NULL) {
+        printf("OpenGL context could not be created! SDL_Error: %s\n", SDL_GetError());
         return false;
     }
+
+    // Set swap interval for Vsync
+    SDL_GL_SetSwapInterval(1);
 
     int imgFlags = IMG_INIT_PNG;
     if (!(IMG_Init(imgFlags) & imgFlags)) {
@@ -60,6 +69,14 @@ bool init_engine() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0f, (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
     return true;
 }
 
@@ -74,17 +91,11 @@ void main_loop() {
             }
         }
 
-        const Uint8* keystate = SDL_GetKeyboardState(NULL);
-        process_input(keystate);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
+        render_world(&world);
 
-        int window_width, window_height;
-        SDL_GetWindowSize(window, &window_width, &window_height);
-        render_world(&world, window_width, window_height);
-
-        SDL_RenderPresent(renderer);
+        SDL_GL_SwapWindow(window);
     }
 }
 
@@ -166,51 +177,43 @@ void free_engine_assets() {
     free_world(&world);
 }
 
-void render_world(World* world, int window_width, int window_height) {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Set up the projection matrix
+void render_world(World* world) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0f, (GLfloat)window_width / (GLfloat)window_height, 0.1f, 100.0f);
+    gluPerspective(90.0, (double)SCREEN_WIDTH / (double)SCREEN_HEIGHT, 0.1, 100.0);
 
-    // Set up the modelview matrix
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(player.x, player.y, player.z,
-              player.x + cosf(player.yaw) * cosf(player.pitch),
-              player.y + sinf(player.yaw) * cosf(player.pitch),
-              player.z + sinf(player.pitch),
+              player.x + cosf(player.yaw), player.y + sinf(player.yaw), player.z - sinf(player.pitch),
               0.0f, 0.0f, 1.0f);
 
-    // Render the world
-
-    
-    for (int y = 0; y < world->height; y++) {
-        for (int x = 0; x < world->width; x++) {
+    for (int y = 0; y < world->height; ++y) {
+        for (int x = 0; x < world->width; ++x) {
             CellDefinition* cell = &world->cells[y][x];
-            float xPos = x;
-            float yPos = y;
-            float zPos = 0;
+            
+            if (cell->type != CELL_SOLID) continue;
 
-            switch (cell->type) {
-                case CELL_VOID:
-                    // Render a transparent quad
-                    break;
-                case CELL_SOLID:
-                    // Render wall texture
-                    render_textured_quad(cell->wall_texture, xPos, yPos, zPos, 1.0f, 1.0f);
-                    break;
-                case CELL_OPEN:
-                    // Render floor texture
-                    render_textured_quad(cell->floor_texture, xPos, yPos, zPos, 1.0f, 1.0f);
+            float xPos = (float)x;
+            float yPos = (float)y;
+            float zPos = 0.0f;
 
-                    // Render ceiling texture
-                    render_textured_quad(cell->ceiling_texture, xPos, yPos, zPos + 1.0f, 1.0f, 1.0f);
-                    break;
-                default:
-                    break;
-            }
+            glPushMatrix();
+            glTranslatef(xPos, yPos, zPos);
+
+            glBindTexture(GL_TEXTURE_2D, cell->wall_texture);
+
+            glBegin(GL_QUADS);
+                glColor3f(1.0f, 1.0f, 1.0f);
+                glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+                glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 0.0f, 0.0f);
+                glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, 0.0f);
+                glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 1.0f, 0.0f);
+            glEnd();
+
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glPopMatrix();
         }
     }
 }
