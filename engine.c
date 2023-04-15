@@ -75,7 +75,7 @@ void cleanup_engine() {
 
 bool load_engine_assets() {
     // Load world from a bitmap file
-    if (!load_world("assets/world1.bmp", &world)) {
+    if (!load_world("assets/world1.bmp", &world, renderer)) {
         printf("Failed to load world.\n");
         return false;
     }

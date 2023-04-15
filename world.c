@@ -3,15 +3,16 @@
 #include <SDL2/SDL_image.h>
 
 SDL_Surface* load_bitmap(const char* file_path);
-void parse_world_from_surface(SDL_Surface* surface, World* world);
+CellDefinition get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer);
+void parse_world_from_surface(SDL_Surface* surface, World* world, SDL_Renderer* renderer);
 
-bool load_world(const char* file_path, World* world) {
+bool load_world(const char* file_path, World* world, SDL_Renderer* renderer) {
     SDL_Surface* surface = load_bitmap(file_path);
     if (!surface) {
         return false;
     }
 
-    parse_world_from_surface(surface, world);
+    parse_world_from_surface(surface, world, renderer);
     SDL_FreeSurface(surface);
     return true;
 }
@@ -46,7 +47,7 @@ SDL_Surface* load_bitmap(const char* file_path) {
     return surface;
 }
 
-void parse_world_from_surface(SDL_Surface* surface, World* world) {
+void parse_world_from_surface(SDL_Surface* surface, World* world, SDL_Renderer* renderer) {
     world->width = surface->w;
     world->height = surface->h;
     world->cells = malloc(world->height * sizeof(CellDefinition*));
@@ -57,16 +58,8 @@ void parse_world_from_surface(SDL_Surface* surface, World* world) {
             Uint8 r, g, b;
             SDL_GetRGB(get_pixel32(surface, x, y), surface->format, &r, &g, &b);
             SDL_Color color = {r, g, b, 255};
-
-            // TODO: Determine the cell type and assign textures based on the color
-            // This can be done by comparing the color with a predefined mapping of colors to cell types and textures
-
-            // Example (to be replaced with actual logic):
-            world->cells[y][x].type = CELL_OPEN;
-            world->cells[y][x].color = color;
-            world->cells[y][x].floor_texture = NULL;
-            world->cells[y][x].ceiling_texture = NULL;
-            world->cells[y][x].wall_texture = NULL;
+       
+            world->cells[y][x] = get_cell_definition_from_color(color, renderer);
         }
     }
 }
@@ -84,4 +77,43 @@ CellDefinition* get_cell_definition(World* world, int x, int y) {
         return NULL;
     }
     return &world->cells[y][x];
+}
+
+CellDefinition get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer) {
+    CellDefinition cell_def;
+
+    // Magenta (#FF00FF) - Void block
+    if (color.r == 0xFF && color.g == 0x00 && color.b == 0xFF) {
+        cell_def.type = CELL_SOLID;
+        cell_def.color = color;
+        cell_def.floor_texture = NULL;
+        cell_def.ceiling_texture = NULL;
+        cell_def.wall_texture = NULL;
+    }
+    // #404040 - Solid with grey brick texture
+    else if (color.r == 0x40 && color.g == 0x40 && color.b == 0x40) {
+        cell_def.type = CELL_SOLID;
+        cell_def.color = color;
+        cell_def.floor_texture = NULL;
+        cell_def.ceiling_texture = NULL;
+        cell_def.wall_texture = IMG_LoadTexture(renderer, "assets/grey_brick1.bmp");
+    }
+    // #808080 - Open with stone floor and marble pattern ceiling textures
+    else if (color.r == 0x80 && color.g == 0x80 && color.b == 0x80) {
+        cell_def.type = CELL_OPEN;
+        cell_def.color = color;
+        cell_def.floor_texture = IMG_LoadTexture(renderer, "assets/stone_floor1.bmp");
+        cell_def.ceiling_texture = IMG_LoadTexture(renderer, "assets/marble_pattern1.bmp");
+        cell_def.wall_texture = NULL;
+    }
+    // Default - Open and transparent (no textures)
+    else {
+        cell_def.type = CELL_OPEN;
+        cell_def.color = color;
+        cell_def.floor_texture = NULL;
+        cell_def.ceiling_texture = NULL;
+        cell_def.wall_texture = NULL;
+    }
+
+    return cell_def;
 }

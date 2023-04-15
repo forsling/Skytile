@@ -23,7 +23,7 @@ typedef struct {
     CellDefinition** cells;
 } World;
 
-bool load_world(const char* file_path, World* world);
+bool load_world(const char* file_path, World* world, SDL_Renderer* renderer);
 void free_world(World* world);
 CellDefinition* get_cell_definition(World* world, int x, int y);
 
