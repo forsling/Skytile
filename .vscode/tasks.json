@@ -9,6 +9,7 @@
         "-g",
         "${workspaceFolder}\\main.c",
         "${workspaceFolder}\\engine.c",
+        "${workspaceFolder}\\world.c",
         "-o",
         "${fileDirname}\\${fileBasenameNoExtension}.exe",
         "-IC:\\Users\\simon\\source\\repos\\GPT-3D-Test\\include",

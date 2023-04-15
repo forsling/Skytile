@@ -1,10 +1,13 @@
 #include "engine.h"
+#include "world.h"
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
+
+World world;
 
 bool init_engine() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -31,6 +34,10 @@ bool init_engine() {
         return false;
     }
 
+    if (!load_engine_assets()) {
+        return false;
+    }
+
     return true;
 }
 
@@ -48,13 +55,14 @@ void main_loop() {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        // Render your game objects here
+        render_world(&world);
 
         SDL_RenderPresent(renderer);
     }
 }
 
 void cleanup_engine() {
+    free_engine_assets();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     window = NULL;
@@ -62,4 +70,22 @@ void cleanup_engine() {
 
     IMG_Quit();
     SDL_Quit();
+}
+
+bool load_engine_assets() {
+    // Load world from a bitmap file
+    if (!load_world("path/to/your/bitmap/file.bmp", &world)) {
+        printf("Failed to load world.\n");
+        return false;
+    }
+    return true;
+}
+
+void free_engine_assets() {
+    free_world(&world);
+}
+
+void render_world(World* world) {
+    // TODO: Implement rendering logic for the world
+    // This would include rendering floors, ceilings, and walls based on the cell definitions
 }
