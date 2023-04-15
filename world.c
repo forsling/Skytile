@@ -14,6 +14,11 @@ bool load_world(const char* file_path, World* world, SDL_Renderer* renderer) {
 
     parse_world_from_surface(surface, world, renderer);
     SDL_FreeSurface(surface);
+
+    world->wall_texture = load_texture("assets/grey_brick1.bmp");
+    world->floor_texture = load_texture("assets/stone_floor1.bmp");
+    world->ceiling_texture = load_texture("assets/marble_pattern1.bmp");
+
     return true;
 }
 

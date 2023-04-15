@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 
 typedef enum {
     CELL_OPEN,
@@ -21,6 +22,10 @@ typedef struct {
     int width;
     int height;
     CellDefinition** cells;
+    GLuint void_texture;
+    GLuint wall_texture;
+    GLuint floor_texture;
+    GLuint ceiling_texture;
 } World;
 
 bool load_world(const char* file_path, World* world, SDL_Renderer* renderer);

@@ -12,7 +12,7 @@ void cleanup_engine();
 
 bool load_engine_assets();
 void free_engine_assets();
-void render_world(World* world);
+void render_world(World* world, int window_width, int window_height);
 void process_input(const Uint8* keystate);
 
 typedef struct {

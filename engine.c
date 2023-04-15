@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include <math.h>
+#include <GL/glew.h>
+#include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_image.h>
+#include <GL/glu.h>
 #include "engine.h"
 #include "world.h"
 
@@ -49,6 +53,13 @@ bool init_engine() {
     player.yaw = 0.0f;
     player.speed = 0.1f; // Adjust this value to set the movement speed
 
+    // Initialize OpenGL
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     return true;
 }
 
@@ -69,7 +80,9 @@ void main_loop() {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        render_world(&world);
+        int window_width, window_height;
+        SDL_GetWindowSize(window, &window_width, &window_height);
+        render_world(&world, window_width, window_height);
 
         SDL_RenderPresent(renderer);
     }
@@ -128,11 +141,48 @@ bool load_engine_assets() {
     return true;
 }
 
+GLuint load_texture(const char* filename) {
+    SDL_Surface* surface = IMG_Load(filename);
+    if (!surface) {
+        printf("Error loading texture: %s\n", IMG_GetError());
+        return 0;
+    }
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
+
+    SDL_FreeSurface(surface);
+
+    return texture;
+}
+
 void free_engine_assets() {
     free_world(&world);
 }
 
-void render_world(World* world) {
-    // TODO: Implement rendering logic for the world
-    // This would include rendering floors, ceilings, and walls based on the cell definitions
+void render_world(World* world, int window_width, int window_height) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Set up the projection matrix
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(60.0f, (GLfloat)window_width / (GLfloat)window_height, 0.1f, 100.0f);
+
+    // Set up the modelview matrix
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(player.x, player.y, player.z,
+              player.x + cosf(player.yaw) * cosf(player.pitch),
+              player.y + sinf(player.yaw) * cosf(player.pitch),
+              player.z + sinf(player.pitch),
+              0.0f, 0.0f, 1.0f);
+
+    // Render the world
+    // TODO: Render textured quads for the floor, ceiling, and walls based on the world map
 }
