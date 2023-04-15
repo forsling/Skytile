@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "engine.h"
 #include "world.h"
 
@@ -9,6 +10,7 @@ SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 
 World world;
+Player player;
 
 bool init_engine() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -39,6 +41,14 @@ bool init_engine() {
         return false;
     }
 
+    // Initialize player object
+    player.x = world.width / 2;
+    player.y = world.height / 2;
+    player.z = 1.0f; // Adjust this value to set the initial height
+    player.pitch = 0.0f;
+    player.yaw = 0.0f;
+    player.speed = 0.1f; // Adjust this value to set the movement speed
+
     return true;
 }
 
@@ -53,6 +63,9 @@ void main_loop() {
             }
         }
 
+        const Uint8* keystate = SDL_GetKeyboardState(NULL);
+        process_input(keystate);
+
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
@@ -61,6 +74,39 @@ void main_loop() {
         SDL_RenderPresent(renderer);
     }
 }
+
+void process_input(const Uint8* keystate) {
+    // Update player rotation based on mouse input
+    int mouse_x_rel, mouse_y_rel;
+    SDL_GetRelativeMouseState(&mouse_x_rel, &mouse_y_rel);
+    player.yaw -= mouse_x_rel * 0.002f; // Adjust this value to set the mouse sensitivity
+    player.pitch -= mouse_y_rel * 0.002f;
+
+    // Update player position based on keyboard input
+    float move_x = 0.0f, move_y = 0.0f;
+    if (keystate[SDL_SCANCODE_W]) {
+        move_x += cosf(player.yaw) * player.speed;
+        move_y += sinf(player.yaw) * player.speed;
+    }
+    if (keystate[SDL_SCANCODE_S]) {
+        move_x -= cosf(player.yaw) * player.speed;
+        move_y -= sinf(player.yaw) * player.speed;
+    }
+    if (keystate[SDL_SCANCODE_A]) {
+        move_x -= sinf(player.yaw) * player.speed;
+        move_y += cosf(player.yaw) * player.speed;
+    }
+    if (keystate[SDL_SCANCODE_D]) {
+        move_x += sinf(player.yaw) * player.speed;
+        move_y -= cosf(player.yaw) * player.speed;
+    }
+
+    // Check for collisions and update player position
+    // TODO: Implement proper collision detection
+    player.x += move_x;
+    player.y += move_y;
+}
+
 
 void cleanup_engine() {
     free_engine_assets();
