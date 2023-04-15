@@ -86,7 +86,7 @@ CellDefinition get_cell_definition_from_color(SDL_Color color, SDL_Renderer* ren
 
     // Magenta (#FF00FF) - Void block
     if (color.r == 0xFF && color.g == 0x00 && color.b == 0xFF) {
-        cell_def.type = CELL_SOLID;
+        cell_def.type = CELL_VOID;
         cell_def.color = color;
         cell_def.floor_texture = 0;
         cell_def.ceiling_texture = 0;
@@ -96,7 +96,7 @@ CellDefinition get_cell_definition_from_color(SDL_Color color, SDL_Renderer* ren
     else if (color.r == 0x40 && color.g == 0x40 && color.b == 0x40) {
         cell_def.type = CELL_SOLID;
         cell_def.color = color;
-        cell_def.floor_texture = 0;
+        cell_def.floor_texture = loadTexture("assets/earth1.bmp");
         cell_def.ceiling_texture = 0;
         cell_def.wall_texture = loadTexture("assets/grey_brick1.bmp");
     }
