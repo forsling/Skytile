@@ -200,6 +200,18 @@ void free_engine_assets() {
     free_world(&world);
 }
 
+void render_textured_quad(GLuint texture, float vertices[12]) {
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBegin(GL_QUADS);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3fv(&vertices[0]);
+    glTexCoord2f(1.0f, 0.0f); glVertex3fv(&vertices[3]);
+    glTexCoord2f(1.0f, 1.0f); glVertex3fv(&vertices[6]);
+    glTexCoord2f(0.0f, 1.0f); glVertex3fv(&vertices[9]);
+    glEnd();
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void render_world(World *world) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -211,105 +223,49 @@ void render_world(World *world) {
               player.x + cosf(player.yaw), player.y + sinf(player.yaw), player.z - sinf(player.pitch),
               0.0f, 0.0f, 1.0f);
 
-   
+    const int DX[] = {1, 0, -1, 0};
+    const int DY[] = {0, 1, 0, -1};
+    const float WALL_CORNERS[4][3] = {
+        {1.0f, 0.0f, 0.0f},
+        {1.0f, 1.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f},
+        {0.0f, 0.0f, 0.0f}
+    };
+
     for (int y = 0; y < world->height; ++y) {
         for (int x = 0; x < world->width; ++x) {
             CellDefinition* cell = &world->cells[y][x];
 
-            float xPos = (float)x;
-            float yPos = (float)y;
-            float zPos = 0.0f;
-
-            glPushMatrix();
-            glTranslatef(xPos, yPos, zPos);
-
             if (cell->type != CELL_VOID) {
-                glBindTexture(GL_TEXTURE_2D, cell->floor_texture);
-
-                glBegin(GL_QUADS);
-                glColor3f(1.0f, 1.0f, 1.0f);
-                glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, zPos);
-                glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 0.0f, zPos);
-                glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, zPos);
-                glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 1.0f, zPos);
-                glEnd();
-
-                glBindTexture(GL_TEXTURE_2D, 0);
-            } 
-
-            if (cell->type == CELL_OPEN || cell->type == CELL_VOID) {
-                if (x + 1 < world->width && world->cells[y][x + 1].type == CELL_SOLID) {
-                    // Render right wall
-                    CellDefinition* rightCell = &world->cells[y][x + 1];
-                    glBindTexture(GL_TEXTURE_2D, rightCell->type == CELL_SOLID ? rightCell->wall_texture : cell->wall_texture);
-                    glBegin(GL_QUADS);
-                    glColor3f(1.0f, 1.0f, 1.0f);
-                    glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, 0.0f, zPos);
-                    glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 1.0f, zPos);
-                    glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, zPos + 1.0f);
-                    glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 0.0f, zPos + 1.0f);
-                    glEnd();
-                    glBindTexture(GL_TEXTURE_2D, 0);
-                }
-
-                if (x - 1 >= 0 && world->cells[y][x - 1].type == CELL_SOLID) {
-                    // Render left wall
-                    CellDefinition* leftCell = &world->cells[y][x - 1];
-                    glBindTexture(GL_TEXTURE_2D, leftCell->            type == CELL_SOLID ? leftCell->wall_texture : cell->wall_texture);
-                    glBegin(GL_QUADS);
-                    glColor3f(1.0f, 1.0f, 1.0f);
-                    glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, zPos);
-                    glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0f, 1.0f, zPos);
-                    glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, 1.0f, zPos + 1.0f);
-                    glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 0.0f, zPos + 1.0f);
-                    glEnd();
-                    glBindTexture(GL_TEXTURE_2D, 0);
-                }
-
-                if (y + 1 < world->height && world->cells[y + 1][x].type == CELL_SOLID) {
-                    // Render bottom wall
-                    CellDefinition* bottomCell = &world->cells[y + 1][x];
-                    glBindTexture(GL_TEXTURE_2D, bottomCell->type == CELL_SOLID ? bottomCell->wall_texture : cell->wall_texture);
-                    glBegin(GL_QUADS);
-                    glColor3f(1.0f, 1.0f, 1.0f);
-                    glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 1.0f, zPos);
-                    glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 1.0f, zPos);
-                    glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, zPos + 1.0f);
-                    glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 1.0f, zPos + 1.0f);
-                    glEnd();
-                    glBindTexture(GL_TEXTURE_2D, 0);
-                }
-
-                if (y - 1 >= 0 && world->cells[y - 1][x].type == CELL_SOLID) {
-                    // Render top wall
-                    CellDefinition* topCell = &world->cells[y - 1][x];
-                    glBindTexture(GL_TEXTURE_2D, topCell->type == CELL_SOLID ? topCell->wall_texture : cell->wall_texture);
-                    glBegin(GL_QUADS);
-                    glColor3f(1.0f, 1.0f, 1.0f);
-                    glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, zPos);
-                    glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 0.0f, zPos);
-                    glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 0.0f, zPos + 1.0f);
-                    glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 0.0f, zPos + 1.0f);
-                    glEnd();
-                    glBindTexture(GL_TEXTURE_2D, 0);
-                }
+                float vertices[12] = {
+                    x, y, 0.0f,
+                    x + 1, y, 0.0f,
+                    x + 1, y + 1, 0.0f,
+                    x, y + 1, 0.0f
+                };
+                render_textured_quad(cell->floor_texture, vertices);
             }
 
-            glPopMatrix();
+            if (cell->type == CELL_OPEN || cell->type == CELL_VOID) {
+                for (int i = 0; i < 4; ++i) {
+                    int nx = x + DX[i];
+                    int ny = y + DY[i];
+                    
+                    if (nx >= 0 && nx < world->width && ny >= 0 && ny < world->height) {
+                        CellDefinition *neighbor = &world->cells[ny][nx];
+                        
+                        if (neighbor->type == CELL_SOLID) {
+                            float vertices[12] = {
+                                x + WALL_CORNERS[i][0], y + WALL_CORNERS[i][1], 0.0f,
+                                x + WALL_CORNERS[(i + 1) % 4][0], y + WALL_CORNERS[(i + 1) % 4][1], 0.0f,
+                                x + WALL_CORNERS[(i + 1) % 4][0], y + WALL_CORNERS[(i + 1) % 4][1], 1.0f,
+                                x + WALL_CORNERS[i][0], y + WALL_CORNERS[i][1], 1.0f
+                            };
+                            render_textured_quad(neighbor->wall_texture, vertices);
+                        }
+                    }
+                }
+            }
         }
     }
-}
-
-void render_textured_quad(GLuint texture, float x, float y, float z, float width, float height) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glBegin(GL_QUADS);
-    glTexCoord2f(0, 0);
-    glVertex3f(x, y, z);
-    glTexCoord2f(1, 0);
-    glVertex3f(x + width, y, z);
-    glTexCoord2f(1, 1);
-    glVertex3f(x + width, y + height, z);
-    glTexCoord2f(0, 1);
-    glVertex3f(x, y + height, z);
-    glEnd();
 }

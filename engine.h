@@ -13,8 +13,8 @@ void cleanup_engine();
 
 bool load_engine_assets();
 void free_engine_assets();
+void render_textured_quad(GLuint texture, float vertices[12]);
 void render_world(World* world);
-void render_textured_quad(GLuint texture, float x, float y, float z, float width, float height);
 void process_input();
 void process_mouse();
 
