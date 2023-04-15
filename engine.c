@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "engine.h"
 #include "world.h"
 
@@ -74,7 +75,7 @@ void cleanup_engine() {
 
 bool load_engine_assets() {
     // Load world from a bitmap file
-    if (!load_world("path/to/your/bitmap/file.bmp", &world)) {
+    if (!load_world("assets/world1.bmp", &world)) {
         printf("Failed to load world.\n");
         return false;
     }
