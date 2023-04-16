@@ -354,16 +354,18 @@ void render_world(World *world) {
                     }
                 }
             }
-            else if (cell->type == CELL_SOLID && cell->wall_texture != 0) {
+            else if (cell->type == CELL_SOLID) {
                 for (int i = 0; i < 4; ++i) {
                     CellDefinition *neighbor = neighbors[i];
-                    if (neighbor == NULL) {
-                        // Render walls on the edge
+                    bool isSolidEdgeBlock = (cell->wall_texture != 0 && neighbor == NULL);
+                    bool isTransparentSolidWithSolidNeighbor = (cell->wall_texture == 0 && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0);
+                    if (isSolidEdgeBlock || isTransparentSolidWithSolidNeighbor) {
                         Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
                         Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
                         Vec3 c = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 1.0f};
                         Vec3 d = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 1.0f};
-                        render_textured_quad(cell->wall_texture, a, b, c, d); // Using current solid cell's wall texture
+                        GLuint wall_texture = isSolidEdgeBlock ? cell->wall_texture : neighbor->wall_texture;
+                        render_textured_quad(wall_texture, a, b, c, d); // Using the appropriate wall texture
                     }
                 }
             }
