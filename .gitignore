@@ -1,6 +1,6 @@
 *.exe
+*.dll
 
 include/
 lib/
 untracked/
-

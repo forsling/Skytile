@@ -9,7 +9,7 @@
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
-const float SCALE_FACTOR = 1.0f;
+const float SCALE_FACTOR = 2.0f;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -64,7 +64,7 @@ bool init_engine() {
     player.speed = 0.1f; // Adjust this value to set the movement speed
 
     // Initialize OpenGL
-    glClearColor(0.2f, 0.1f, 0.15f, 1.0f);
+    glClearColor(0.17f, 0.2f, 0.26f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
@@ -108,21 +108,72 @@ void main_loop() {
 }
 
 void update_player_position(Player *player, World *world, float dx, float dy, float dz) {
+    const float COLLISION_BUFFER = 0.3f * SCALE_FACTOR;
+
     float newX = player->position.x + dx * player->speed;
     float newY = player->position.y + dy * player->speed;
     float newZ = player->position.z + dz * player->speed;
 
-    int gridX = (int)newX;
-    int gridY = (int)newY;
+    int gridX = (int)(newX / SCALE_FACTOR);
+    int gridY = (int)(newY / SCALE_FACTOR);
+
+    bool canMoveX = true;
+    bool canMoveY = true;
 
     if (gridX >= 0 && gridX < world->width && gridY >= 0 && gridY < world->height) {
         CellDefinition *cell = &world->cells[gridY][gridX];
-        if (cell->type != CELL_SOLID) {
-            player->position.x = newX;
-            player->position.y = newY;
-            player->position.z = newZ;
+        if (cell->type == CELL_SOLID) {
+            float cellCenterX = gridX * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
+            float cellCenterY = gridY * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
+
+            if (fabs(newX - cellCenterX) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
+                canMoveX = false;
+            }
+
+            if (fabs(newY - cellCenterY) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
+                canMoveY = false;
+            }
         }
     }
+
+    // Handle corner cases to avoid getting stuck
+    if (!canMoveX && !canMoveY) {
+        float oldX = player->position.x;
+        float oldY = player->position.y;
+
+        player->position.x = newX;
+        gridX = (int)(player->position.x / SCALE_FACTOR);
+        gridY = (int)(player->position.y / SCALE_FACTOR);
+
+        if (gridX >= 0 && gridX < world->width && gridY >= 0 && gridY < world->height) {
+            CellDefinition *cell = &world->cells[gridY][gridX];
+            if (cell->type != CELL_SOLID) {
+                canMoveX = true;
+            }
+        }
+
+        player->position.x = oldX;
+        player->position.y = newY;
+        gridX = (int)(player->position.x / SCALE_FACTOR);
+        gridY = (int)(player->position.y / SCALE_FACTOR);
+
+        if (gridX >= 0 && gridX < world->width && gridY >= 0 && gridY < world->height) {
+            CellDefinition *cell = &world->cells[gridY][gridX];
+            if (cell->type != CELL_SOLID) {
+                canMoveY = true;
+            }
+        }
+
+        player->position.y = oldY;
+    }
+
+    if (canMoveX) {
+        player->position.x = newX;
+    }
+    if (canMoveY) {
+        player->position.y = newY;
+    }
+    player->position.z = newZ;
 }
 
 void process_input(World *world) {
