@@ -281,7 +281,7 @@ void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d) {
 void render_world(World *world) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90.0, (double)SCREEN_WIDTH / (double)SCREEN_HEIGHT, 0.1, 100.0);
+    gluPerspective(90.0, (double)SCREEN_WIDTH / (double)SCREEN_HEIGHT, 0.01, 500.0);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -291,81 +291,52 @@ void render_world(World *world) {
 
     const int DX[] = {1, 0, -1, 0};
     const int DY[] = {0, 1, 0, -1};
-    Vec3 WALL_CORNERS[] = {
-        {1.0f, 0.0f, 0.0f},
-        {1.0f, 1.0f, 0.0f},
-        {0.0f, 1.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f}
-    };
 
     for (int y = 0; y < world->height; ++y) {
         for (int x = 0; x < world->width; ++x) {
-            CellDefinition* cell = &world->cells[y][x];
-
-            // Get cell neighbors
-            CellDefinition *neighbors[4];
-            for (int i = 0; i < 4; ++i) {
-                int nx = x + DX[i];
-                int ny = y + DY[i];
-
-                if (is_within_bounds(world, nx, ny)) {
-                    neighbors[i] = &world->cells[ny][nx];
-                } else {
-                    neighbors[i] = NULL;
-                }
-            }
+            CellDefinition *cell = &world->cells[y][x];
+            CellDefinition *neighbors[4] = {
+                get_cell(world, x + DX[0], y + DY[0]),
+                get_cell(world, x + DX[1], y + DY[1]),
+                get_cell(world, x + DX[2], y + DY[2]),
+                get_cell(world, x + DX[3], y + DY[3])
+            };
 
             // Render floors
             if (cell->floor_texture != 0) {
-                Vec3 floor_vertices[4] = {
-                    {x, y, 0.0f},
-                    {x + 1, y, 0.0f},
-                    {x + 1, y + 1, 0.0f},
-                    {x, y + 1, 0.0f}
-                };
+                Vec3 floor_vertices[4];
+                calculate_vertices(floor_vertices, x, y, DIR_DOWN);
                 render_textured_quad(cell->floor_texture, floor_vertices[0], floor_vertices[1], floor_vertices[2], floor_vertices[3]);
             }
 
             // Render ceilings
             if (cell->ceiling_texture != 0) {
-                Vec3 ceiling_vertices[4] = {
-                    {x, y, 1.0f},
-                    {x + 1, y, 1.0f},
-                    {x + 1, y + 1, 1.0f},
-                    {x, y + 1, 1.0f}
-                };
+                Vec3 ceiling_vertices[4];
+                calculate_vertices(ceiling_vertices, x, y, DIR_UP);
                 render_textured_quad(cell->ceiling_texture, ceiling_vertices[0], ceiling_vertices[1], ceiling_vertices[2], ceiling_vertices[3]);
             }
-
+            
             if (cell->type == CELL_OPEN) {
                 for (int i = 0; i < 4; ++i) {
                     CellDefinition *neighbor = neighbors[i];
-                    if (neighbor != NULL && neighbor->type == CELL_SOLID) {                        
-                        if (neighbor->type == CELL_SOLID) {
-                            if (neighbor->wall_texture != 0) {
-                                // Render walls
-                                Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
-                                Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
-                                Vec3 c = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 1.0f};
-                                Vec3 d = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 1.0f};
-                                render_textured_quad(neighbor->wall_texture, a, b, c, d);
-                            }
-                        }
+
+                    if (neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0) {
+                        Vec3 wall_vertices[4];
+                        calculate_vertices(wall_vertices, x, y, i);
+                        render_textured_quad(neighbor->wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3]);
                     }
                 }
-            }
-            else if (cell->type == CELL_SOLID) {
+            } else if (cell->type == CELL_SOLID) {
                 for (int i = 0; i < 4; ++i) {
                     CellDefinition *neighbor = neighbors[i];
                     bool isSolidEdgeBlock = (cell->wall_texture != 0 && neighbor == NULL);
                     bool isTransparentSolidWithSolidNeighbor = (cell->wall_texture == 0 && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0);
+
                     if (isSolidEdgeBlock || isTransparentSolidWithSolidNeighbor) {
-                        Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
-                        Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
-                        Vec3 c = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 1.0f};
-                        Vec3 d = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 1.0f};
+                        Vec3 wall_vertices[4];
+                        calculate_vertices(wall_vertices, x, y, i);
                         GLuint wall_texture = isSolidEdgeBlock ? cell->wall_texture : neighbor->wall_texture;
-                        render_textured_quad(wall_texture, a, b, c, d); // Using the appropriate wall texture
+                        render_textured_quad(wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3]);
                     }
                 }
             }
@@ -387,4 +358,52 @@ bool is_out_of_bounds(World *world, int x, int y) {
 
 bool is_within_bounds(World *world, int x, int y) {
     return x >= 0 && x < world->width && y >= 0 && y < world->height;
+}
+
+CellDefinition *get_cell(World *world, int x, int y) {
+    if (is_out_of_bounds(world, x, y)) {
+        return NULL;
+    }
+    return &world->cells[y][x];
+}
+
+void calculate_vertices(Vec3 vertices[4], int x, int y, Direction direction) {
+    switch (direction) {
+        case DIR_DOWN:
+            vertices[0] = (Vec3){x, y, 0.0f};
+            vertices[1] = (Vec3){x + 1, y, 0.0f};
+            vertices[2] = (Vec3){x + 1, y + 1, 0.0f};
+            vertices[3] = (Vec3){x, y + 1, 0.0f};
+            break;
+        case DIR_UP:
+            vertices[0] = (Vec3){x, y, 1.0f};
+            vertices[1] = (Vec3){x + 1, y, 1.0f};
+            vertices[2] = (Vec3){x + 1, y + 1, 1.0f};
+            vertices[3] = (Vec3){x, y + 1, 1.0f};
+            break;
+        case DIR_NORTH:
+            vertices[0] = (Vec3){x, y + 1, 0.0f};
+            vertices[1] = (Vec3){x + 1, y + 1, 0.0f};
+            vertices[2] = (Vec3){x + 1, y + 1, 1.0f};
+            vertices[3] = (Vec3){x, y + 1, 1.0f};
+            break;
+        case DIR_EAST:
+            vertices[0] = (Vec3){x + 1, y, 0.0f};
+            vertices[1] = (Vec3){x + 1, y + 1, 0.0f};
+            vertices[2] = (Vec3){x + 1, y + 1, 1.0f};
+            vertices[3] = (Vec3){x + 1, y, 1.0f};
+            break;
+        case DIR_SOUTH:
+            vertices[0] = (Vec3){x, y, 0.0f};
+            vertices[1] = (Vec3){x + 1, y, 0.0f};
+            vertices[2] = (Vec3){x + 1, y, 1.0f};
+            vertices[3] = (Vec3){x, y, 1.0f};
+            break;
+        case DIR_WEST:
+            vertices[0] = (Vec3){x, y, 0.0f};
+            vertices[1] = (Vec3){x, y + 1, 0.0f};
+            vertices[2] = (Vec3){x, y + 1, 1.0f};
+            vertices[3] = (Vec3){x, y, 1.0f};
+            break;
+    }
 }

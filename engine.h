@@ -19,6 +19,15 @@ typedef struct {
     float speed; // Movement speed
 } Player;
 
+typedef enum {
+    DIR_EAST,
+    DIR_NORTH,
+    DIR_WEST,
+    DIR_SOUTH,
+    DIR_DOWN,
+    DIR_UP,
+} Direction;
+
 bool init_engine();
 void main_loop();
 void cleanup_engine();
@@ -30,8 +39,10 @@ void render_world(World* world);
 void process_input();
 void process_mouse();
 
+CellDefinition *get_cell(World *world, int x, int y);
 bool is_solid_cell(World *world, int x, int y);
 bool is_out_of_bounds(World *world, int x, int y);
 bool is_within_bounds(World *world, int x, int y);
+void calculate_vertices(Vec3 vertices[4], int x, int y, Direction direction);
 
 #endif // ENGINE_H
