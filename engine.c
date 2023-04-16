@@ -9,7 +9,7 @@
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
-const float SCALE_FACTOR = 2.0f;
+const float SCALE_FACTOR = 1.0f;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -36,7 +36,7 @@ bool init_engine() {
         return false;
     }
 
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    gl_context = SDL_GL_CreateContext(window);
     if (gl_context == NULL) {
         printf("OpenGL context could not be created! SDL_Error: %s\n", SDL_GetError());
         return false;
@@ -94,7 +94,7 @@ void main_loop() {
             }
         }
 
-        process_input();
+        process_input(&world);
         process_mouse();
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -107,13 +107,25 @@ void main_loop() {
     SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
-void update_player_position(Player *player, float dx, float dy, float dz) {
-    player->position.x += dx * player->speed;
-    player->position.y += dy * player->speed;
-    player->position.z += dz * player->speed;
+void update_player_position(Player *player, World *world, float dx, float dy, float dz) {
+    float newX = player->position.x + dx * player->speed;
+    float newY = player->position.y + dy * player->speed;
+    float newZ = player->position.z + dz * player->speed;
+
+    int gridX = (int)newX;
+    int gridY = (int)newY;
+
+    if (gridX >= 0 && gridX < world->width && gridY >= 0 && gridY < world->height) {
+        CellDefinition *cell = &world->cells[gridY][gridX];
+        if (cell->type != CELL_SOLID) {
+            player->position.x = newX;
+            player->position.y = newY;
+            player->position.z = newZ;
+        }
+    }
 }
 
-void process_input() {
+void process_input(World *world) {
     const Uint8 *state = SDL_GetKeyboardState(NULL);
 
     float dx = 0.0f;
@@ -143,7 +155,7 @@ void process_input() {
         dz -= 1.0f;
     }
 
-    update_player_position(&player, dx, dy, dz);
+    update_player_position(&player, world, dx, dy, dz);
 }
 
 void process_mouse() {
