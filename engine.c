@@ -9,6 +9,7 @@
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
+const float SCALE_FACTOR = 2.0f;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -72,7 +73,7 @@ bool init_engine() {
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f, (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
+    gluPerspective(45.0f, (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 500.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -205,15 +206,28 @@ void free_engine_assets() {
 }
 
 void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d) {
+    Vec3 scaled_a = {a.x * SCALE_FACTOR, a.y * SCALE_FACTOR, a.z * SCALE_FACTOR};
+    Vec3 scaled_b = {b.x * SCALE_FACTOR, b.y * SCALE_FACTOR, b.z * SCALE_FACTOR};
+    Vec3 scaled_c = {c.x * SCALE_FACTOR, c.y * SCALE_FACTOR, c.z * SCALE_FACTOR};
+    Vec3 scaled_d = {d.x * SCALE_FACTOR, d.y * SCALE_FACTOR, d.z * SCALE_FACTOR};
+
     glBindTexture(GL_TEXTURE_2D, texture);
+
     glBegin(GL_QUADS);
-    glColor3f(1.0f, 1.0f, 1.0f);
-    glTexCoord2f(0.0f, 0.0f); glVertex3f(a.x, a.y, a.z);
-    glTexCoord2f(1.0f, 0.0f); glVertex3f(b.x, b.y, b.z);
-    glTexCoord2f(1.0f, 1.0f); glVertex3f(c.x, c.y, c.z);
-    glTexCoord2f(0.0f, 1.0f); glVertex3f(d.x, d.y, d.z);
+    {
+        glTexCoord2f(0, 0);
+        glVertex3f(scaled_a.x, scaled_a.y, scaled_a.z);
+
+        glTexCoord2f(1, 0);
+        glVertex3f(scaled_b.x, scaled_b.y, scaled_b.z);
+
+        glTexCoord2f(1, 1);
+        glVertex3f(scaled_c.x, scaled_c.y, scaled_c.z);
+
+        glTexCoord2f(0, 1);
+        glVertex3f(scaled_d.x, scaled_d.y, scaled_d.z);
+    }
     glEnd();
-    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void render_world(World *world) {
