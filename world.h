@@ -7,8 +7,7 @@
 
 typedef enum {
     CELL_OPEN,
-    CELL_SOLID,
-    CELL_VOID
+    CELL_SOLID
 } CellType;
 
 typedef struct {
