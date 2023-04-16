@@ -302,6 +302,19 @@ void render_world(World *world) {
         for (int x = 0; x < world->width; ++x) {
             CellDefinition* cell = &world->cells[y][x];
 
+            // Get cell neighbors
+            CellDefinition *neighbors[4];
+            for (int i = 0; i < 4; ++i) {
+                int nx = x + DX[i];
+                int ny = y + DY[i];
+
+                if (is_within_bounds(world, nx, ny)) {
+                    neighbors[i] = &world->cells[ny][nx];
+                } else {
+                    neighbors[i] = NULL;
+                }
+            }
+
             // Render floors
             if (cell->floor_texture != 0) {
                 Vec3 floor_vertices[4] = {
@@ -313,8 +326,8 @@ void render_world(World *world) {
                 render_textured_quad(cell->floor_texture, floor_vertices[0], floor_vertices[1], floor_vertices[2], floor_vertices[3]);
             }
 
+            // Render ceilings
             if (cell->ceiling_texture != 0) {
-                // Render ceilings
                 Vec3 ceiling_vertices[4] = {
                     {x, y, 1.0f},
                     {x + 1, y, 1.0f},
@@ -326,12 +339,8 @@ void render_world(World *world) {
 
             if (cell->type == CELL_OPEN) {
                 for (int i = 0; i < 4; ++i) {
-                    int nx = x + DX[i];
-                    int ny = y + DY[i];
-
-                    if (is_within_bounds(world, nx, ny)) {
-                        CellDefinition *neighbor = &world->cells[ny][nx];
-                        
+                    CellDefinition *neighbor = neighbors[i];
+                    if (neighbor != NULL && neighbor->type == CELL_SOLID) {                        
                         if (neighbor->type == CELL_SOLID) {
                             if (neighbor->wall_texture != 0) {
                                 // Render walls
@@ -347,10 +356,8 @@ void render_world(World *world) {
             }
             else if (cell->type == CELL_SOLID && cell->wall_texture != 0) {
                 for (int i = 0; i < 4; ++i) {
-                    int nx = x + DX[i];
-                    int ny = y + DY[i];
-
-                    if (is_out_of_bounds(world, nx, ny)) {
+                    CellDefinition *neighbor = neighbors[i];
+                    if (neighbor == NULL) {
                         // Render walls on the edge
                         Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
                         Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
