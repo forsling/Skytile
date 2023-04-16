@@ -55,9 +55,9 @@ bool init_engine() {
     }
 
     // Initialize player object
-    player.x = world.width / 2;
-    player.y = world.height / 2;
-    player.z = 1.0f; // Adjust this value to set the initial height
+    player.position.x = world.width / 2;
+    player.position.y = world.height / 2;
+    player.position.z = 1.0f; // Adjust this value to set the initial height
     player.pitch = 0.0f;
     player.yaw = 0.0f;
     player.speed = 0.1f; // Adjust this value to set the movement speed
@@ -106,6 +106,12 @@ void main_loop() {
     SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
+void update_player_position(Player *player, float dx, float dy, float dz) {
+    player->position.x += dx * player->speed;
+    player->position.y += dy * player->speed;
+    player->position.z += dz * player->speed;
+}
+
 void process_input() {
     const Uint8 *state = SDL_GetKeyboardState(NULL);
 
@@ -136,9 +142,7 @@ void process_input() {
         dz -= 1.0f;
     }
 
-    player.x += dx * player.speed;
-    player.y += dy * player.speed;
-    player.z += dz * player.speed;
+    update_player_position(&player, dx, dy, dz);
 }
 
 void process_mouse() {
@@ -219,9 +223,9 @@ void render_world(World *world) {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(player.x, player.y, player.z,
-              player.x + cosf(player.yaw), player.y + sinf(player.yaw), player.z - sinf(player.pitch),
-              0.0f, 0.0f, 1.0f);
+    gluLookAt(player.position.x, player.position.y, player.position.z,
+            player.position.x + cosf(player.yaw), player.position.y + sinf(player.yaw), player.position.z - sinf(player.pitch),
+            0.0f, 0.0f, 1.0f);
 
     const int DX[] = {1, 0, -1, 0};
     const int DY[] = {0, 1, 0, -1};

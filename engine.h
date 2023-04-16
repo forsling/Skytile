@@ -19,7 +19,13 @@ void process_input();
 void process_mouse();
 
 typedef struct {
-    float x, y, z; // Position
+    float x;
+    float y;
+    float z;
+} Vec3;
+
+typedef struct {
+    Vec3 position;
     float pitch, yaw; // Camera rotation
     float speed; // Movement speed
 } Player;
