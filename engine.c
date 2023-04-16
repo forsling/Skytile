@@ -18,6 +18,8 @@ SDL_GLContext gl_context = NULL;
 World world;
 Player player;
 
+static bool quit = false;
+
 bool init_engine() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -82,7 +84,6 @@ bool init_engine() {
 }
 
 void main_loop() {
-    bool quit = false;
     SDL_Event event;
 
     SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -172,6 +173,9 @@ void process_input(World *world) {
     float dy = 0.0f;
     float dz = 0.0f;
 
+    if (state[SDL_SCANCODE_ESCAPE]) {
+        quit = true;
+    }
     if (state[SDL_SCANCODE_W]) {
         dx += cosf(player.yaw);
         dy += sinf(player.yaw);
