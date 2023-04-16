@@ -255,13 +255,25 @@ void render_world(World *world) {
             CellDefinition* cell = &world->cells[y][x];
 
             if (cell->type != CELL_VOID) {
-                Vec3 vertices[4] = {
+                //Render floors
+                Vec3 floor_vertices[4] = {
                     {x, y, 0.0f},
                     {x + 1, y, 0.0f},
                     {x + 1, y + 1, 0.0f},
                     {x, y + 1, 0.0f}
                 };
-                render_textured_quad(cell->floor_texture, vertices[0], vertices[1], vertices[2], vertices[3]);
+                render_textured_quad(cell->floor_texture, floor_vertices[0], floor_vertices[1], floor_vertices[2], floor_vertices[3]);
+
+                if (cell->ceiling_texture != 0) {
+                    //Render ceilings
+                    Vec3 ceiling_vertices[4] = {
+                        {x, y, 1.0f},
+                        {x + 1, y, 1.0f},
+                        {x + 1, y + 1, 1.0f},
+                        {x, y + 1, 1.0f}
+                    };
+                    render_textured_quad(cell->ceiling_texture, ceiling_vertices[0], ceiling_vertices[1], ceiling_vertices[2], ceiling_vertices[3]);
+                }
             }
 
             if (cell->type == CELL_OPEN || cell->type == CELL_VOID) {
@@ -273,11 +285,11 @@ void render_world(World *world) {
                         CellDefinition *neighbor = &world->cells[ny][nx];
                         
                         if (neighbor->type == CELL_SOLID) {
+                            //Render walls
                             Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
                             Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
                             Vec3 c = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 1.0f};
                             Vec3 d = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 1.0f};
-
                             render_textured_quad(neighbor->wall_texture, a, b, c, d);
                         }
                     }
