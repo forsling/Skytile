@@ -29,6 +29,9 @@ void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d);
 void render_world(World* world);
 void process_input();
 void process_mouse();
+
 bool is_solid_cell(World *world, int x, int y);
+bool is_out_of_bounds(World *world, int x, int y);
+bool is_within_bounds(World *world, int x, int y);
 
 #endif // ENGINE_H

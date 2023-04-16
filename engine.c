@@ -108,14 +108,6 @@ void main_loop() {
     SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
-bool is_solid_cell(World *world, int x, int y) {
-    if (x >= 0 && x < world->width && y >= 0 && y < world->height) {
-        CellDefinition *cell = &world->cells[y][x];
-        return cell->type == CELL_SOLID;
-    }
-    return false;
-}
-
 void update_player_position(Player *player, World *world, float dx, float dy, float dz) {
     const float COLLISION_BUFFER = 0.3f * SCALE_FACTOR;
 
@@ -337,7 +329,7 @@ void render_world(World *world) {
                     int nx = x + DX[i];
                     int ny = y + DY[i];
 
-                    if (nx >= 0 && nx < world->width && ny >= 0 && ny < world->height) {
+                    if (is_within_bounds(world, nx, ny)) {
                         CellDefinition *neighbor = &world->cells[ny][nx];
                         
                         if (neighbor->type == CELL_SOLID) {
@@ -358,7 +350,7 @@ void render_world(World *world) {
                     int nx = x + DX[i];
                     int ny = y + DY[i];
 
-                    if (nx < 0 || nx >= world->width || ny < 0 || ny >= world->height) {
+                    if (is_out_of_bounds(world, nx, ny)) {
                         // Render walls on the edge
                         Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
                         Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
@@ -370,4 +362,20 @@ void render_world(World *world) {
             }
         }
     }
+}
+
+bool is_solid_cell(World *world, int x, int y) {
+    if (is_within_bounds(world, x, y)) {
+        CellDefinition *cell = &world->cells[y][x];
+        return cell->type == CELL_SOLID;
+    }
+    return false;
+}
+
+bool is_out_of_bounds(World *world, int x, int y) {
+    return x < 0 || x >= world->width || y < 0 || y >= world->height;
+}
+
+bool is_within_bounds(World *world, int x, int y) {
+    return x >= 0 && x < world->width && y >= 0 && y < world->height;
 }
