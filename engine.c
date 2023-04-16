@@ -204,14 +204,14 @@ void free_engine_assets() {
     free_world(&world);
 }
 
-void render_textured_quad(GLuint texture, float vertices[12]) {
+void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d) {
     glBindTexture(GL_TEXTURE_2D, texture);
     glBegin(GL_QUADS);
     glColor3f(1.0f, 1.0f, 1.0f);
-    glTexCoord2f(0.0f, 0.0f); glVertex3fv(&vertices[0]);
-    glTexCoord2f(1.0f, 0.0f); glVertex3fv(&vertices[3]);
-    glTexCoord2f(1.0f, 1.0f); glVertex3fv(&vertices[6]);
-    glTexCoord2f(0.0f, 1.0f); glVertex3fv(&vertices[9]);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(a.x, a.y, a.z);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(b.x, b.y, b.z);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(c.x, c.y, c.z);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(d.x, d.y, d.z);
     glEnd();
     glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -229,7 +229,7 @@ void render_world(World *world) {
 
     const int DX[] = {1, 0, -1, 0};
     const int DY[] = {0, 1, 0, -1};
-    const float WALL_CORNERS[4][3] = {
+    Vec3 WALL_CORNERS[] = {
         {1.0f, 0.0f, 0.0f},
         {1.0f, 1.0f, 0.0f},
         {0.0f, 1.0f, 0.0f},
@@ -241,31 +241,30 @@ void render_world(World *world) {
             CellDefinition* cell = &world->cells[y][x];
 
             if (cell->type != CELL_VOID) {
-                float vertices[12] = {
-                    x, y, 0.0f,
-                    x + 1, y, 0.0f,
-                    x + 1, y + 1, 0.0f,
-                    x, y + 1, 0.0f
+                Vec3 vertices[4] = {
+                    {x, y, 0.0f},
+                    {x + 1, y, 0.0f},
+                    {x + 1, y + 1, 0.0f},
+                    {x, y + 1, 0.0f}
                 };
-                render_textured_quad(cell->floor_texture, vertices);
+                render_textured_quad(cell->floor_texture, vertices[0], vertices[1], vertices[2], vertices[3]);
             }
 
             if (cell->type == CELL_OPEN || cell->type == CELL_VOID) {
                 for (int i = 0; i < 4; ++i) {
                     int nx = x + DX[i];
                     int ny = y + DY[i];
-                    
+
                     if (nx >= 0 && nx < world->width && ny >= 0 && ny < world->height) {
                         CellDefinition *neighbor = &world->cells[ny][nx];
                         
                         if (neighbor->type == CELL_SOLID) {
-                            float vertices[12] = {
-                                x + WALL_CORNERS[i][0], y + WALL_CORNERS[i][1], 0.0f,
-                                x + WALL_CORNERS[(i + 1) % 4][0], y + WALL_CORNERS[(i + 1) % 4][1], 0.0f,
-                                x + WALL_CORNERS[(i + 1) % 4][0], y + WALL_CORNERS[(i + 1) % 4][1], 1.0f,
-                                x + WALL_CORNERS[i][0], y + WALL_CORNERS[i][1], 1.0f
-                            };
-                            render_textured_quad(neighbor->wall_texture, vertices);
+                            Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
+                            Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
+                            Vec3 c = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 1.0f};
+                            Vec3 d = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 1.0f};
+
+                            render_textured_quad(neighbor->wall_texture, a, b, c, d);
                         }
                     }
                 }

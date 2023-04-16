@@ -7,17 +7,6 @@
 #include <stdbool.h>
 #include "world.h"
 
-bool init_engine();
-void main_loop();
-void cleanup_engine();
-
-bool load_engine_assets();
-void free_engine_assets();
-void render_textured_quad(GLuint texture, float vertices[12]);
-void render_world(World* world);
-void process_input();
-void process_mouse();
-
 typedef struct {
     float x;
     float y;
@@ -29,5 +18,16 @@ typedef struct {
     float pitch, yaw; // Camera rotation
     float speed; // Movement speed
 } Player;
+
+bool init_engine();
+void main_loop();
+void cleanup_engine();
+
+bool load_engine_assets();
+void free_engine_assets();
+void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d);
+void render_world(World* world);
+void process_input();
+void process_mouse();
 
 #endif // ENGINE_H
