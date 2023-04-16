@@ -310,7 +310,7 @@ void render_world(World *world) {
         for (int x = 0; x < world->width; ++x) {
             CellDefinition* cell = &world->cells[y][x];
 
-            //Render floors
+            // Render floors
             if (cell->floor_texture != 0) {
                 Vec3 floor_vertices[4] = {
                     {x, y, 0.0f},
@@ -322,7 +322,7 @@ void render_world(World *world) {
             }
 
             if (cell->ceiling_texture != 0) {
-                //Render ceilings
+                // Render ceilings
                 Vec3 ceiling_vertices[4] = {
                     {x, y, 1.0f},
                     {x + 1, y, 1.0f},
@@ -342,7 +342,7 @@ void render_world(World *world) {
                         
                         if (neighbor->type == CELL_SOLID) {
                             if (neighbor->wall_texture != 0) {
-                                //Render walls
+                                // Render walls
                                 Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
                                 Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
                                 Vec3 c = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 1.0f};
@@ -350,6 +350,21 @@ void render_world(World *world) {
                                 render_textured_quad(neighbor->wall_texture, a, b, c, d);
                             }
                         }
+                    }
+                }
+            }
+            else if (cell->type == CELL_SOLID && cell->wall_texture != 0) {
+                for (int i = 0; i < 4; ++i) {
+                    int nx = x + DX[i];
+                    int ny = y + DY[i];
+
+                    if (nx < 0 || nx >= world->width || ny < 0 || ny >= world->height) {
+                        // Render walls on the edge
+                        Vec3 a = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 0.0f};
+                        Vec3 b = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 0.0f};
+                        Vec3 c = {x + WALL_CORNERS[(i + 1) % 4].x, y + WALL_CORNERS[(i + 1) % 4].y, 1.0f};
+                        Vec3 d = {x + WALL_CORNERS[i].x, y + WALL_CORNERS[i].y, 1.0f};
+                        render_textured_quad(cell->wall_texture, a, b, c, d); // Using current solid cell's wall texture
                     }
                 }
             }

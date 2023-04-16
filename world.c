@@ -97,7 +97,7 @@ CellDefinition get_cell_definition_from_color(SDL_Color color, SDL_Renderer* ren
         cell_def.type = CELL_SOLID;
         cell_def.color = color;
         cell_def.floor_texture = loadTexture("assets/earth1.bmp");
-        cell_def.ceiling_texture = 0;
+        cell_def.ceiling_texture = loadTexture("assets/grey_tile1.bmp");
         cell_def.wall_texture = loadTexture("assets/grey_brick1.bmp");
     }
     // #808080 - Open with stone floor and marble pattern ceiling textures
