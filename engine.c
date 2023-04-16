@@ -107,6 +107,14 @@ void main_loop() {
     SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
+bool is_solid_cell(World *world, int x, int y) {
+    if (x >= 0 && x < world->width && y >= 0 && y < world->height) {
+        CellDefinition *cell = &world->cells[y][x];
+        return cell->type == CELL_SOLID;
+    }
+    return false;
+}
+
 void update_player_position(Player *player, World *world, float dx, float dy, float dz) {
     const float COLLISION_BUFFER = 0.3f * SCALE_FACTOR;
 
@@ -117,22 +125,19 @@ void update_player_position(Player *player, World *world, float dx, float dy, fl
     int gridX = (int)(newX / SCALE_FACTOR);
     int gridY = (int)(newY / SCALE_FACTOR);
 
-    bool canMoveX = true;
-    bool canMoveY = true;
+    bool canMoveX = !is_solid_cell(world, gridX, gridY);
+    bool canMoveY = !is_solid_cell(world, gridX, gridY);
 
-    if (gridX >= 0 && gridX < world->width && gridY >= 0 && gridY < world->height) {
-        CellDefinition *cell = &world->cells[gridY][gridX];
-        if (cell->type == CELL_SOLID) {
-            float cellCenterX = gridX * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
-            float cellCenterY = gridY * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
+    if (canMoveX || canMoveY) {
+        float cellCenterX = gridX * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
+        float cellCenterY = gridY * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
 
-            if (fabs(newX - cellCenterX) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
-                canMoveX = false;
-            }
+        if (canMoveX && fabs(newX - cellCenterX) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
+            canMoveX = false;
+        }
 
-            if (fabs(newY - cellCenterY) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
-                canMoveY = false;
-            }
+        if (canMoveY && fabs(newY - cellCenterY) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
+            canMoveY = false;
         }
     }
 
@@ -142,27 +147,11 @@ void update_player_position(Player *player, World *world, float dx, float dy, fl
         float oldY = player->position.y;
 
         player->position.x = newX;
-        gridX = (int)(player->position.x / SCALE_FACTOR);
-        gridY = (int)(player->position.y / SCALE_FACTOR);
-
-        if (gridX >= 0 && gridX < world->width && gridY >= 0 && gridY < world->height) {
-            CellDefinition *cell = &world->cells[gridY][gridX];
-            if (cell->type != CELL_SOLID) {
-                canMoveX = true;
-            }
-        }
+        canMoveX = !is_solid_cell(world, (int)(player->position.x / SCALE_FACTOR), (int)(player->position.y / SCALE_FACTOR));
 
         player->position.x = oldX;
         player->position.y = newY;
-        gridX = (int)(player->position.x / SCALE_FACTOR);
-        gridY = (int)(player->position.y / SCALE_FACTOR);
-
-        if (gridX >= 0 && gridX < world->width && gridY >= 0 && gridY < world->height) {
-            CellDefinition *cell = &world->cells[gridY][gridX];
-            if (cell->type != CELL_SOLID) {
-                canMoveY = true;
-            }
-        }
+        canMoveY = !is_solid_cell(world, (int)(player->position.x / SCALE_FACTOR), (int)(player->position.y / SCALE_FACTOR));
 
         player->position.y = oldY;
     }
