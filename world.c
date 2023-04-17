@@ -4,7 +4,7 @@
 #include <SDL2/SDL_image.h>
 
 SDL_Surface* load_bitmap(const char* file_path);
-CellDefinition get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer);
+Cell get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer);
 void parse_world_from_surface(SDL_Surface* surface, World* world, SDL_Renderer* renderer);
 
 bool load_world(const char* file_path, World* world, SDL_Renderer* renderer) {
@@ -52,10 +52,10 @@ SDL_Surface* load_bitmap(const char* file_path) {
 void parse_world_from_surface(SDL_Surface* surface, World* world, SDL_Renderer* renderer) {
     world->width = surface->w;
     world->height = surface->h;
-    world->cells = malloc(world->height * sizeof(CellDefinition*));
+    world->cells = malloc(world->height * sizeof(Cell*));
 
     for (int y = 0; y < world->height; ++y) {
-        world->cells[y] = malloc(world->width * sizeof(CellDefinition));
+        world->cells[y] = malloc(world->width * sizeof(Cell));
         for (int x = 0; x < world->width; ++x) {
             Uint8 r, g, b;
             SDL_GetRGB(get_pixel32(surface, x, y), surface->format, &r, &g, &b);
@@ -74,15 +74,15 @@ void free_world(World* world) {
     world->cells = NULL;
 }
 
-CellDefinition* get_cell_definition(World* world, int x, int y) {
+Cell* get_cell_definition(World* world, int x, int y) {
     if (x < 0 || x >= world->width || y < 0 || y >= world->height) {
         return NULL;
     }
     return &world->cells[y][x];
 }
 
-CellDefinition get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer) {
-    CellDefinition cell_def;
+Cell get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer) {
+    Cell cell_def;
 
     // Magenta (#FF00FF) - Void block
     if (color.r == 0xFF && color.g == 0x00 && color.b == 0xFF) {

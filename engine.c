@@ -295,8 +295,8 @@ void render_world(World *world) {
 
     for (int y = 0; y < world->height; ++y) {
         for (int x = 0; x < world->width; ++x) {
-            CellDefinition *cell = &world->cells[y][x];
-            CellDefinition *neighbors[4] = {
+            Cell *cell = &world->cells[y][x];
+            Cell *neighbors[4] = {
                 get_cell(world, x + DX[0], y + DY[0]),
                 get_cell(world, x + DX[1], y + DY[1]),
                 get_cell(world, x + DX[2], y + DY[2]),
@@ -321,7 +321,7 @@ void render_world(World *world) {
             }
             
             for (int i = 0; i < 4; ++i) {
-                CellDefinition *neighbor = neighbors[i];
+                Cell *neighbor = neighbors[i];
                 if (cell->type == CELL_OPEN && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0) {
                     //Render walls for solid edge blocks
                     Vec3 wall_vertices[4];
@@ -349,7 +349,7 @@ void render_world(World *world) {
 
 bool is_solid_cell(World *world, int x, int y) {
     if (is_within_bounds(world, x, y)) {
-        CellDefinition *cell = &world->cells[y][x];
+        Cell *cell = &world->cells[y][x];
         return cell->type == CELL_SOLID;
     }
     return false;
@@ -363,7 +363,7 @@ bool is_within_bounds(World *world, int x, int y) {
     return x >= 0 && x < world->width && y >= 0 && y < world->height;
 }
 
-CellDefinition *get_cell(World *world, int x, int y) {
+Cell *get_cell(World *world, int x, int y) {
     if (is_out_of_bounds(world, x, y)) {
         return NULL;
     }

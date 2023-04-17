@@ -39,7 +39,7 @@ void render_world(World* world);
 void process_input();
 void process_mouse();
 
-CellDefinition *get_cell(World *world, int x, int y);
+Cell *get_cell(World *world, int x, int y);
 bool is_solid_cell(World *world, int x, int y);
 bool is_out_of_bounds(World *world, int x, int y);
 bool is_within_bounds(World *world, int x, int y);

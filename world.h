@@ -16,17 +16,17 @@ typedef struct {
     GLuint floor_texture;
     GLuint ceiling_texture;
     GLuint wall_texture;
-} CellDefinition;
+} Cell;
 
 typedef struct {
     int width;
     int height;
-    CellDefinition** cells;
+    Cell** cells;
 } World;
 
 bool load_world(const char* file_path, World* world, SDL_Renderer* renderer);
 void free_world(World* world);
-CellDefinition* get_cell_definition(World* world, int x, int y);
+Cell* get_cell_definition(World* world, int x, int y);
 GLuint loadTexture(const char *filename);
 
 #endif // WORLD_H
