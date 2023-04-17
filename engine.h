@@ -34,7 +34,7 @@ void cleanup_engine();
 
 bool load_engine_assets();
 void free_engine_assets();
-void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d);
+void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d, float v_scale);
 void render_world(World* world);
 void process_input();
 void process_mouse();

@@ -7,9 +7,10 @@
 #include "engine.h"
 #include "world.h"
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
 const float SCALE_FACTOR = 2.0f;
+const int CELL_HEIGHT = 2;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -60,7 +61,7 @@ bool init_engine() {
     // Initialize player object
     player.position.x = world.width / 2;
     player.position.y = world.height / 2;
-    player.position.z = 1.0f; // Adjust this value to set the initial height
+    player.position.z = CELL_HEIGHT;
     player.pitch = 0.0f;
     player.yaw = 0.0f;
     player.speed = 0.1f; // Adjust this value to set the movement speed
@@ -253,7 +254,7 @@ void free_engine_assets() {
     free_world(&world);
 }
 
-void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d) {
+void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d, float v_scale) {
     Vec3 scaled_a = {a.x * SCALE_FACTOR, a.y * SCALE_FACTOR, a.z * SCALE_FACTOR};
     Vec3 scaled_b = {b.x * SCALE_FACTOR, b.y * SCALE_FACTOR, b.z * SCALE_FACTOR};
     Vec3 scaled_c = {c.x * SCALE_FACTOR, c.y * SCALE_FACTOR, c.z * SCALE_FACTOR};
@@ -263,16 +264,16 @@ void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d) {
 
     glBegin(GL_QUADS);
     {
-        glTexCoord2f(0, 0);
+        glTexCoord2f(0.0f, 0.0f);
         glVertex3f(scaled_a.x, scaled_a.y, scaled_a.z);
 
-        glTexCoord2f(1, 0);
+        glTexCoord2f(1.0f, 0.0f);
         glVertex3f(scaled_b.x, scaled_b.y, scaled_b.z);
 
-        glTexCoord2f(1, 1);
+        glTexCoord2f(1.0f, 1.0f * v_scale); 
         glVertex3f(scaled_c.x, scaled_c.y, scaled_c.z);
 
-        glTexCoord2f(0, 1);
+        glTexCoord2f(0.0f, 1.0f * v_scale); 
         glVertex3f(scaled_d.x, scaled_d.y, scaled_d.z);
     }
     glEnd();
@@ -306,37 +307,39 @@ void render_world(World *world) {
             if (cell->floor_texture != 0) {
                 Vec3 floor_vertices[4];
                 calculate_vertices(floor_vertices, x, y, DIR_DOWN);
-                render_textured_quad(cell->floor_texture, floor_vertices[0], floor_vertices[1], floor_vertices[2], floor_vertices[3]);
+                render_textured_quad(cell->floor_texture, floor_vertices[0], floor_vertices[1], floor_vertices[2], floor_vertices[3], 1.0f);
             }
 
             // Render ceilings
             if (cell->ceiling_texture != 0) {
                 Vec3 ceiling_vertices[4];
                 calculate_vertices(ceiling_vertices, x, y, DIR_UP);
-                render_textured_quad(cell->ceiling_texture, ceiling_vertices[0], ceiling_vertices[1], ceiling_vertices[2], ceiling_vertices[3]);
+                for (int i = 0; i < 4; ++i) {
+                    ceiling_vertices[i].z *= 2.0f;
+                }
+                render_textured_quad(cell->ceiling_texture, ceiling_vertices[0], ceiling_vertices[1], ceiling_vertices[2], ceiling_vertices[3], 1.0f);
             }
             
-            if (cell->type == CELL_OPEN) {
-                for (int i = 0; i < 4; ++i) {
-                    CellDefinition *neighbor = neighbors[i];
-
-                    if (neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0) {
-                        Vec3 wall_vertices[4];
-                        calculate_vertices(wall_vertices, x, y, i);
-                        render_textured_quad(neighbor->wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3]);
-                    }
-                }
-            } else if (cell->type == CELL_SOLID) {
-                for (int i = 0; i < 4; ++i) {
-                    CellDefinition *neighbor = neighbors[i];
+            for (int i = 0; i < 4; ++i) {
+                CellDefinition *neighbor = neighbors[i];
+                if (cell->type == CELL_OPEN && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0) {
+                    //Render walls for solid edge blocks
+                    Vec3 wall_vertices[4];
+                    calculate_vertices(wall_vertices, x, y, i);
+                    wall_vertices[2].z *= CELL_HEIGHT;
+                    wall_vertices[3].z *= CELL_HEIGHT;
+                    render_textured_quad(neighbor->wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3], CELL_HEIGHT);
+                } else if (cell->type == CELL_SOLID) {
+                    //Render walls when untextured solid blocks borders textured solid blocks
                     bool isSolidEdgeBlock = (cell->wall_texture != 0 && neighbor == NULL);
                     bool isTransparentSolidWithSolidNeighbor = (cell->wall_texture == 0 && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0);
-
                     if (isSolidEdgeBlock || isTransparentSolidWithSolidNeighbor) {
                         Vec3 wall_vertices[4];
                         calculate_vertices(wall_vertices, x, y, i);
+                        wall_vertices[2].z *= CELL_HEIGHT;
+                        wall_vertices[3].z *= CELL_HEIGHT;
                         GLuint wall_texture = isSolidEdgeBlock ? cell->wall_texture : neighbor->wall_texture;
-                        render_textured_quad(wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3]);
+                        render_textured_quad(wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3], CELL_HEIGHT);
                     }
                 }
             }
