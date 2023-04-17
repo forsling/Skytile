@@ -2,52 +2,90 @@
 #include "world.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <dirent.h>
 
-SDL_Surface* load_bitmap(const char* file_path);
-Cell get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer);
-void parse_world_from_surface(SDL_Surface* surface, World* world, SDL_Renderer* renderer);
+bool load_world(World* world) {
+    DIR* dir;
+    struct dirent* entry;
+    int level_count = 0;
 
-bool load_world(const char* file_path, World* world, SDL_Renderer* renderer) {
-    SDL_Surface* surface = load_bitmap(file_path);
-    if (!surface) {
+    dir = opendir("levels");
+    if (dir == NULL) {
+        printf("Failed to open levels directory.\n");
         return false;
     }
 
-    parse_world_from_surface(surface, world, renderer);
-    SDL_FreeSurface(surface);
+    // Count the number of level files
+    while ((entry = readdir(dir)) != NULL) {
+        if (strstr(entry->d_name, "level-") != NULL && strstr(entry->d_name, ".bmp") != NULL) {
+            level_count++;
+        }
+    }
 
+    // Allocate memory for levels
+    world->num_levels = level_count;
+    world->levels = malloc(level_count * sizeof(Level));
+
+    // Reset directory position
+    rewinddir(dir);
+
+    // Load each level
+    int level_index = 0;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strstr(entry->d_name, "level-") != NULL && strstr(entry->d_name, ".bmp") != NULL) {
+            char level_path[256];
+            snprintf(level_path, sizeof(level_path), "levels/%s", entry->d_name);
+
+            SDL_Surface* level_surface = SDL_LoadBMP(level_path);
+            if (level_surface == NULL) {
+                printf("Failed to load level %s\n", entry->d_name);
+                continue;
+            }
+
+            parse_level_from_surface(level_surface, &world->levels[level_index]);
+            SDL_FreeSurface(level_surface);
+            level_index++;
+        }
+    }
+
+    closedir(dir);
     return true;
 }
 
 void free_world(World* world) {
-    for (int y = 0; y < world->height; ++y) {
-        free(world->cells[y]);
+    for (int i = 0; i < world->num_levels; ++i) {
+        Level* level = &world->levels[i];
+        for (int y = 0; y < level->height; ++y) {
+            free(level->cells[y]);
+        }
+        free(level->cells);
     }
-    free(world->cells);
-    world->cells = NULL;
+    free(world->levels);
+    world->levels = NULL;
+    world->num_levels = 0;
 }
 
-void parse_world_from_surface(SDL_Surface* surface, World* world, SDL_Renderer* renderer) {
-    world->width = surface->w;
-    world->height = surface->h;
-    world->cells = malloc(world->height * sizeof(Cell*));
+void parse_level_from_surface(SDL_Surface* surface, Level* level) {
+    level->width = surface->w;
+    level->height = surface->h;
+    level->cells = malloc(level->height * sizeof(Cell*));
 
-    for (int y = 0; y < world->height; ++y) {
-        world->cells[y] = malloc(world->width * sizeof(Cell));
-        for (int x = 0; x < world->width; ++x) {
+    for (int y = 0; y < level->height; ++y) {
+        level->cells[y] = malloc(level->width * sizeof(Cell));
+        for (int x = 0; x < level->width; ++x) {
             Uint8 r, g, b;
             SDL_GetRGB(get_pixel32(surface, x, y), surface->format, &r, &g, &b);
             SDL_Color color = {r, g, b, 255};
        
-            world->cells[y][x] = get_cell_definition_from_color(color, renderer);
+            level->cells[y][x] = get_cell_definition_from_color(color);
         }
     }
 }
 
-Cell get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer) {
+Cell get_cell_definition_from_color(SDL_Color color) {
     Cell cell_def;
 
-    // Magenta (#FF00FF) - Void block
+    // #FF00FF (Magenta) - Void block
     if (color.r == 0xFF && color.g == 0x00 && color.b == 0xFF) {
         cell_def.type = CELL_SOLID;
         cell_def.color = color;
@@ -55,7 +93,7 @@ Cell get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer) {
         cell_def.ceiling_texture = 0;
         cell_def.wall_texture = 0;
     }
-    // #404040 - Solid with grey brick texture
+    // #404040 - Brick wall
     else if (color.r == 0x40 && color.g == 0x40 && color.b == 0x40) {
         cell_def.type = CELL_SOLID;
         cell_def.color = color;
@@ -63,7 +101,7 @@ Cell get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer) {
         cell_def.ceiling_texture = loadTexture("assets/grey_tile1.bmp");
         cell_def.wall_texture = loadTexture("assets/grey_brick1.bmp");
     }
-    // #808080 - Open with stone floor and marble pattern ceiling textures
+    // #808080 - Stone floor marble pattern ceiling
     else if (color.r == 0x80 && color.g == 0x80 && color.b == 0x80) {
         cell_def.type = CELL_OPEN;
         cell_def.color = color;
@@ -71,7 +109,7 @@ Cell get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer) {
         cell_def.ceiling_texture = loadTexture("assets/marble_pattern1.bmp");
         cell_def.wall_texture = 0;
     }
-    // Default - Open and transparent (no textures)
+    // Default - Open space
     else {
         cell_def.type = CELL_OPEN;
         cell_def.color = color;
@@ -136,11 +174,4 @@ SDL_Surface* load_bitmap(const char* file_path) {
         printf("Unable to load bitmap: %s\n", IMG_GetError());
     }
     return surface;
-}
-
-Cell* get_cell_definition(World* world, int x, int y) {
-    if (x < 0 || x >= world->width || y < 0 || y >= world->height) {
-        return NULL;
-    }
-    return &world->cells[y][x];
 }

@@ -58,9 +58,11 @@ bool init_engine() {
         return false;
     }
 
+    Level first_level = world.levels[0];
+
     // Initialize player object
-    player.position.x = world.width / 2;
-    player.position.y = world.height / 2;
+    player.position.x = first_level.width / 2;
+    player.position.y = first_level.height / 2;
     player.position.z = CELL_HEIGHT;
     player.pitch = 0.0f;
     player.yaw = 0.0f;
@@ -119,37 +121,49 @@ void update_player_position(Player *player, World *world, float dx, float dy, fl
     int gridX = (int)(newX / SCALE_FACTOR);
     int gridY = (int)(newY / SCALE_FACTOR);
 
-    bool canMoveX = !is_solid_cell(world, gridX, gridY);
-    bool canMoveY = !is_solid_cell(world, gridX, gridY);
+    int levelIndex = get_level_from_z(newZ, world);
 
-    if (canMoveX || canMoveY) {
-        float cellCenterX = gridX * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
-        float cellCenterY = gridY * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
+    printf("Level index: %d (x: %f y: %f z: %f) \n", levelIndex, newX, newY, newZ);
 
-        if (canMoveX && fabs(newX - cellCenterX) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
-            canMoveX = false;
+    bool canMoveX = true;
+    bool canMoveY = true;
+
+    if (levelIndex > 0) {
+        // Get the corresponding level
+        Level *level = &world->levels[levelIndex];
+
+        canMoveX = !is_solid_cell(level, gridX, gridY);
+        canMoveY = !is_solid_cell(level, gridX, gridY);
+
+        if (canMoveX || canMoveY) {
+            float cellCenterX = gridX * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
+            float cellCenterY = gridY * SCALE_FACTOR + SCALE_FACTOR / 2.0f;
+
+            if (canMoveX && fabs(newX - cellCenterX) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
+                canMoveX = false;
+            }
+
+            if (canMoveY && fabs(newY - cellCenterY) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
+                canMoveY = false;
+            }
         }
 
-        if (canMoveY && fabs(newY - cellCenterY) <= (SCALE_FACTOR / 2.0f + COLLISION_BUFFER)) {
-            canMoveY = false;
+        // Handle corner cases to avoid getting stuck
+        if (!canMoveX && !canMoveY) {
+            float oldX = player->position.x;
+            float oldY = player->position.y;
+
+            player->position.x = newX;
+            canMoveX = !is_solid_cell(level, (int)(player->position.x / SCALE_FACTOR), (int)(player->position.y / SCALE_FACTOR));
+
+            player->position.x = oldX;
+            player->position.y = newY;
+            canMoveY = !is_solid_cell(level, (int)(player->position.x / SCALE_FACTOR), (int)(player->position.y / SCALE_FACTOR));
+
+            player->position.y = oldY;
         }
     }
-
-    // Handle corner cases to avoid getting stuck
-    if (!canMoveX && !canMoveY) {
-        float oldX = player->position.x;
-        float oldY = player->position.y;
-
-        player->position.x = newX;
-        canMoveX = !is_solid_cell(world, (int)(player->position.x / SCALE_FACTOR), (int)(player->position.y / SCALE_FACTOR));
-
-        player->position.x = oldX;
-        player->position.y = newY;
-        canMoveY = !is_solid_cell(world, (int)(player->position.x / SCALE_FACTOR), (int)(player->position.y / SCALE_FACTOR));
-
-        player->position.y = oldY;
-    }
-
+    
     if (canMoveX) {
         player->position.x = newX;
     }
@@ -222,7 +236,7 @@ void cleanup_engine() {
 
 bool load_engine_assets() {
     // Load world from a bitmap file
-    if (!load_world("assets/world1.bmp", &world, renderer)) {
+    if (!load_world(&world)) {
         printf("Failed to load world.\n");
         return false;
     }
@@ -293,81 +307,98 @@ void render_world(World *world) {
     const int DX[] = {1, 0, -1, 0};
     const int DY[] = {0, 1, 0, -1};
 
-    for (int y = 0; y < world->height; ++y) {
-        for (int x = 0; x < world->width; ++x) {
-            Cell *cell = &world->cells[y][x];
-            Cell *neighbors[4] = {
-                get_cell(world, x + DX[0], y + DY[0]),
-                get_cell(world, x + DX[1], y + DY[1]),
-                get_cell(world, x + DX[2], y + DY[2]),
-                get_cell(world, x + DX[3], y + DY[3])
-            };
+    for (int l = 0; l < world->num_levels; l++) {
+        Level *level = &world->levels[l];
+        for (int y = 0; y < level->height; ++y) {
+            for (int x = 0; x < level->width; ++x) {
+                Cell *cell = &level->cells[y][x];
+                Cell *neighbors[4] = {
+                    get_cell(level, x + DX[0], y + DY[0]),
+                    get_cell(level, x + DX[1], y + DY[1]),
+                    get_cell(level, x + DX[2], y + DY[2]),
+                    get_cell(level, x + DX[3], y + DY[3])
+                };
 
-            // Render floors
-            if (cell->floor_texture != 0) {
-                Vec3 floor_vertices[4];
-                calculate_vertices(floor_vertices, x, y, DIR_DOWN);
-                render_textured_quad(cell->floor_texture, floor_vertices[0], floor_vertices[1], floor_vertices[2], floor_vertices[3], 1.0f);
-            }
-
-            // Render ceilings
-            if (cell->ceiling_texture != 0) {
-                Vec3 ceiling_vertices[4];
-                calculate_vertices(ceiling_vertices, x, y, DIR_UP);
-                for (int i = 0; i < 4; ++i) {
-                    ceiling_vertices[i].z *= 2.0f;
+                // Render floors
+                if (cell->floor_texture != 0) {
+                    Vec3 floor_vertices[4];
+                    calculate_vertices(floor_vertices, x, y, DIR_DOWN);
+                    render_textured_quad(cell->floor_texture, floor_vertices[0], floor_vertices[1], floor_vertices[2], floor_vertices[3], 1.0f);
                 }
-                render_textured_quad(cell->ceiling_texture, ceiling_vertices[0], ceiling_vertices[1], ceiling_vertices[2], ceiling_vertices[3], 1.0f);
-            }
-            
-            for (int i = 0; i < 4; ++i) {
-                Cell *neighbor = neighbors[i];
-                if (cell->type == CELL_OPEN && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0) {
-                    //Render walls for solid edge blocks
-                    Vec3 wall_vertices[4];
-                    calculate_vertices(wall_vertices, x, y, i);
-                    wall_vertices[2].z *= CELL_HEIGHT;
-                    wall_vertices[3].z *= CELL_HEIGHT;
-                    render_textured_quad(neighbor->wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3], CELL_HEIGHT);
-                } else if (cell->type == CELL_SOLID) {
-                    //Render walls when untextured solid blocks borders textured solid blocks
-                    bool isSolidEdgeBlock = (cell->wall_texture != 0 && neighbor == NULL);
-                    bool isTransparentSolidWithSolidNeighbor = (cell->wall_texture == 0 && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0);
-                    if (isSolidEdgeBlock || isTransparentSolidWithSolidNeighbor) {
+
+                // Render ceilings
+                if (cell->ceiling_texture != 0) {
+                    Vec3 ceiling_vertices[4];
+                    calculate_vertices(ceiling_vertices, x, y, DIR_UP);
+                    for (int i = 0; i < 4; ++i) {
+                        ceiling_vertices[i].z *= 2.0f;
+                    }
+                    render_textured_quad(cell->ceiling_texture, ceiling_vertices[0], ceiling_vertices[1], ceiling_vertices[2], ceiling_vertices[3], 1.0f);
+                }
+                
+                for (int i = 0; i < 4; ++i) {
+                    Cell *neighbor = neighbors[i];
+                    if (cell->type == CELL_OPEN && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0) {
+                        //Render walls for solid edge blocks
                         Vec3 wall_vertices[4];
                         calculate_vertices(wall_vertices, x, y, i);
                         wall_vertices[2].z *= CELL_HEIGHT;
                         wall_vertices[3].z *= CELL_HEIGHT;
-                        GLuint wall_texture = isSolidEdgeBlock ? cell->wall_texture : neighbor->wall_texture;
-                        render_textured_quad(wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3], CELL_HEIGHT);
+                        render_textured_quad(neighbor->wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3], CELL_HEIGHT);
+                    } else if (cell->type == CELL_SOLID) {
+                        //Render walls when untextured solid blocks borders textured solid blocks
+                        bool isSolidEdgeBlock = (cell->wall_texture != 0 && neighbor == NULL);
+                        bool isTransparentSolidWithSolidNeighbor = (cell->wall_texture == 0 && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0);
+                        if (isSolidEdgeBlock || isTransparentSolidWithSolidNeighbor) {
+                            Vec3 wall_vertices[4];
+                            calculate_vertices(wall_vertices, x, y, i);
+                            wall_vertices[2].z *= CELL_HEIGHT;
+                            wall_vertices[3].z *= CELL_HEIGHT;
+                            GLuint wall_texture = isSolidEdgeBlock ? cell->wall_texture : neighbor->wall_texture;
+                            render_textured_quad(wall_texture, wall_vertices[0], wall_vertices[1], wall_vertices[2], wall_vertices[3], CELL_HEIGHT);
+                        }
                     }
                 }
             }
         }
     }
+    
 }
 
-bool is_solid_cell(World *world, int x, int y) {
-    if (is_within_bounds(world, x, y)) {
-        Cell *cell = &world->cells[y][x];
+int get_level_from_z(float z, World *world) {
+    // Calculate the level index based on the player's new height
+    // First level is at the top, levels increase downwards
+    int cell_height_offset = (int)((z - CELL_HEIGHT) / CELL_HEIGHT);
+    int levelIndex = 1 + (-cell_height_offset);
+
+    // Make sure the level index is within bounds, 0 to turn of collision detection
+    if (levelIndex < 0 || levelIndex > world->num_levels) {
+        levelIndex = 0;
+    }
+    return levelIndex;
+}
+
+bool is_solid_cell(Level *level, int x, int y) {
+    if (is_within_bounds(level, x, y)) {
+        Cell *cell = &level->cells[y][x];
         return cell->type == CELL_SOLID;
     }
     return false;
 }
 
-bool is_out_of_bounds(World *world, int x, int y) {
-    return x < 0 || x >= world->width || y < 0 || y >= world->height;
+bool is_out_of_bounds(Level *level, int x, int y) {
+    return x < 0 || x >= level->width || y < 0 || y >= level->height;
 }
 
-bool is_within_bounds(World *world, int x, int y) {
-    return x >= 0 && x < world->width && y >= 0 && y < world->height;
+bool is_within_bounds(Level *level, int x, int y) {
+    return x >= 0 && x < level->width && y >= 0 && y < level->height;
 }
 
-Cell *get_cell(World *world, int x, int y) {
-    if (is_out_of_bounds(world, x, y)) {
+Cell *get_cell(Level *level, int x, int y) {
+    if (is_out_of_bounds(level, x, y)) {
         return NULL;
     }
-    return &world->cells[y][x];
+    return &level->cells[y][x];
 }
 
 void calculate_vertices(Vec3 vertices[4], int x, int y, Direction direction) {

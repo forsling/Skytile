@@ -39,10 +39,11 @@ void render_world(World* world);
 void process_input();
 void process_mouse();
 
-Cell *get_cell(World *world, int x, int y);
-bool is_solid_cell(World *world, int x, int y);
-bool is_out_of_bounds(World *world, int x, int y);
-bool is_within_bounds(World *world, int x, int y);
+int get_level_from_z(float z, World *world);
+Cell *get_cell(Level *level, int x, int y);
+bool is_solid_cell(Level *level, int x, int y);
+bool is_out_of_bounds(Level *level, int x, int y);
+bool is_within_bounds(Level *level, int x, int y);
 void calculate_vertices(Vec3 vertices[4], int x, int y, Direction direction);
 
 #endif // ENGINE_H
