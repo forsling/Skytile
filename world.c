@@ -19,34 +19,12 @@ bool load_world(const char* file_path, World* world, SDL_Renderer* renderer) {
     return true;
 }
 
-Uint32 get_pixel32(SDL_Surface *surface, int x, int y) {
-    int bpp = surface->format->BytesPerPixel;
-    Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
-
-    switch (bpp) {
-        case 1:
-            return *p;
-        case 2:
-            return *(Uint16 *)p;
-        case 3:
-            if (SDL_BYTEORDER == SDL_BIG_ENDIAN) {
-                return p[0] << 16 | p[1] << 8 | p[2];
-            } else {
-                return p[0] | p[1] << 8 | p[2] << 16;
-            }
-        case 4:
-            return *(Uint32 *)p;
-        default:
-            return 0;
+void free_world(World* world) {
+    for (int y = 0; y < world->height; ++y) {
+        free(world->cells[y]);
     }
-}
-
-SDL_Surface* load_bitmap(const char* file_path) {
-    SDL_Surface* surface = IMG_Load(file_path);
-    if (!surface) {
-        printf("Unable to load bitmap: %s\n", IMG_GetError());
-    }
-    return surface;
+    free(world->cells);
+    world->cells = NULL;
 }
 
 void parse_world_from_surface(SDL_Surface* surface, World* world, SDL_Renderer* renderer) {
@@ -64,21 +42,6 @@ void parse_world_from_surface(SDL_Surface* surface, World* world, SDL_Renderer* 
             world->cells[y][x] = get_cell_definition_from_color(color, renderer);
         }
     }
-}
-
-void free_world(World* world) {
-    for (int y = 0; y < world->height; ++y) {
-        free(world->cells[y]);
-    }
-    free(world->cells);
-    world->cells = NULL;
-}
-
-Cell* get_cell_definition(World* world, int x, int y) {
-    if (x < 0 || x >= world->width || y < 0 || y >= world->height) {
-        return NULL;
-    }
-    return &world->cells[y][x];
 }
 
 Cell get_cell_definition_from_color(SDL_Color color, SDL_Renderer* renderer) {
@@ -143,4 +106,41 @@ GLuint loadTexture(const char *filename) {
     SDL_FreeSurface(image);
 
     return texture;
+}
+
+Uint32 get_pixel32(SDL_Surface *surface, int x, int y) {
+    int bpp = surface->format->BytesPerPixel;
+    Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+
+    switch (bpp) {
+        case 1:
+            return *p;
+        case 2:
+            return *(Uint16 *)p;
+        case 3:
+            if (SDL_BYTEORDER == SDL_BIG_ENDIAN) {
+                return p[0] << 16 | p[1] << 8 | p[2];
+            } else {
+                return p[0] | p[1] << 8 | p[2] << 16;
+            }
+        case 4:
+            return *(Uint32 *)p;
+        default:
+            return 0;
+    }
+}
+
+SDL_Surface* load_bitmap(const char* file_path) {
+    SDL_Surface* surface = IMG_Load(file_path);
+    if (!surface) {
+        printf("Unable to load bitmap: %s\n", IMG_GetError());
+    }
+    return surface;
+}
+
+Cell* get_cell_definition(World* world, int x, int y) {
+    if (x < 0 || x >= world->width || y < 0 || y >= world->height) {
+        return NULL;
+    }
+    return &world->cells[y][x];
 }
