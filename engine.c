@@ -11,7 +11,7 @@
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 const int CELL_XY_SCALE  = 2;
-const int CELL_Z_SCALE = 2;
+const int CELL_Z_SCALE = 4;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -271,48 +271,48 @@ void free_engine_assets() {
     free_world(&world);
 }
 
-void render_face(float x, float y, float z, float sizeX, float sizeY, Direction direction, GLuint texture) {
+void render_face(float x, float y, float z, float width, float height, Direction direction, GLuint texture) {
     glBindTexture(GL_TEXTURE_2D, texture);
     glBegin(GL_QUADS);
 
-    //printf("Rendering dir=%d at %f, %f, %f with size %f,%f\n", direction, x, y, z, sizeX, sizeY);
+    //printf("Rendering face with dir %d at %f, %f, %f with width %f and height %f\n", direction, x, y, z, width, height);
 
     switch (direction) {
         case DIR_EAST:
-            glTexCoord2f(0.0f, 0.0f); glVertex3f(x + sizeX, y, z);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + sizeX, y, z + sizeY);
-            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + sizeX, y + sizeY, z + sizeY);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x + sizeX, y + sizeY, z);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x + width, y, z);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y, z + height);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + width, y + width, z + height);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x + width, y + width, z);
             break;
         case DIR_DOWN:
-            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z + sizeY);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + sizeX, y, z + sizeY);
-            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + sizeX, y + sizeY, z + sizeY);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + sizeY, z + sizeY);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z + CELL_Z_SCALE);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y, z + CELL_Z_SCALE);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + width, y + height, z + CELL_Z_SCALE);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + height, z + CELL_Z_SCALE);
             break;
         case DIR_WEST:
             glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x, y, z + sizeY);
-            glTexCoord2f(1.0f, 1.0f); glVertex3f(x, y + sizeY, z + sizeY);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + sizeY, z);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x, y, z + height);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(x, y + width, z + height);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + width, z);
             break;
         case DIR_UP:
             glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + sizeX, y, z);
-            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + sizeX, y + sizeY, z);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + sizeY, z);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y, z);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + width, y + height, z);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + height, z);
             break;
         case DIR_NORTH:
             glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + sizeX, y, z);
-            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + sizeX, y, z + sizeY);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y, z + sizeY);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y, z);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + width, y, z + height);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y, z + height);
             break;
         case DIR_SOUTH:
-            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y + sizeY, z);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + sizeX, y + sizeY, z);
-            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + sizeX, y + sizeY, z + sizeY);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + sizeY, z + sizeY);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y + width, z);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y + width, z);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + width, y + width, z + height);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + width, z + height);
             break;
     }
 
@@ -332,14 +332,16 @@ void render_world(World *world) {
 
     Direction neighbor_dirs[] = {DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH};
 
-    //TMP Reference block
-    GLuint marb = loadTexture("assets/marble_pattern1.bmp");
-    GLuint dirt = loadTexture("assets/earth1.bmp");
-    render_face(-4, -4, 0, 4, 4, DIR_UP, marb);
-    render_face(-4, -4, 0, 4, 4, DIR_DOWN, dirt);
-    render_face(-4, -4, 0, 4, 4, DIR_NORTH, marb);
-    render_face(-4, -4, 0, 4, 4, DIR_WEST, marb);
-    render_face(-4, -4, 0, 4, 4, DIR_EAST, marb);
+    bool render_reference_block = false;
+    if (render_reference_block) {
+        GLuint marb = loadTexture("assets/marble_pattern1.bmp");
+        GLuint dirt = loadTexture("assets/earth1.bmp");
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, marb);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, dirt);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, marb);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, marb);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, marb);
+    }
 
     for (int z = 0; z < world->num_levels; z++) {
         Level *level = &world->levels[z];
