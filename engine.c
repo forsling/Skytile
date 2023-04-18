@@ -280,9 +280,9 @@ void render_face(float x, float y, float z, float width, float height, Direction
     switch (direction) {
         case DIR_EAST:
             glTexCoord2f(0.0f, 0.0f); glVertex3f(x + width, y, z);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y, z + height);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y + width, z);
             glTexCoord2f(1.0f, 1.0f); glVertex3f(x + width, y + width, z + height);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x + width, y + width, z);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x + width, y, z + height);
             break;
         case DIR_DOWN:
             glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z + CELL_Z_SCALE);
@@ -291,10 +291,10 @@ void render_face(float x, float y, float z, float width, float height, Direction
             glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + height, z + CELL_Z_SCALE);
             break;
         case DIR_WEST:
-            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x, y, z + height);
-            glTexCoord2f(1.0f, 1.0f); glVertex3f(x, y + width, z + height);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + width, z);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z + height);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x, y + width, z + height);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(x, y + width, z);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y, z);
             break;
         case DIR_UP:
             glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
@@ -334,13 +334,13 @@ void render_world(World *world) {
 
     bool render_reference_block = false;
     if (render_reference_block) {
-        GLuint marb = loadTexture("assets/marble_pattern1.bmp");
+        GLuint tex_wall = loadTexture("assets/grey_brick1.bmp");
         GLuint dirt = loadTexture("assets/earth1.bmp");
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, marb);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, tex_wall);
         render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, dirt);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, marb);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, marb);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, marb);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, tex_wall);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, tex_wall);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, tex_wall);
     }
 
     for (int z = 0; z < world->num_levels; z++) {
