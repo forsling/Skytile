@@ -21,9 +21,9 @@ typedef struct {
 
 typedef enum {
     DIR_EAST,
-    DIR_NORTH,
     DIR_WEST,
     DIR_SOUTH,
+    DIR_NORTH,
     DIR_DOWN,
     DIR_UP,
 } Direction;
@@ -31,19 +31,20 @@ typedef enum {
 bool init_engine();
 void main_loop();
 void cleanup_engine();
-
 bool load_engine_assets();
 void free_engine_assets();
-void render_textured_quad(GLuint texture, Vec3 a, Vec3 b, Vec3 c, Vec3 d, float v_scale);
-void render_world(World* world);
+
 void process_input();
 void process_mouse();
+
+void render_faceX(float x, float y, float z, float size, Direction direction, GLuint texture);
+void render_face(float x, float y, float z, float sizeX, float sizeY, GLuint texture, Direction direction);
+void render_world(World* world);
 
 int get_level_from_z(float z, World *world);
 Cell *get_cell(Level *level, int x, int y);
 bool is_solid_cell(Level *level, int x, int y);
 bool is_out_of_bounds(Level *level, int x, int y);
 bool is_within_bounds(Level *level, int x, int y);
-void calculate_vertices(Vec3 vertices[4], int x, int y, Direction direction);
 
 #endif // ENGINE_H
