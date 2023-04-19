@@ -17,6 +17,9 @@ typedef struct {
     Vec3 position;
     float pitch, yaw; // Camera rotation
     float speed; // Movement speed
+    float velocity_z;
+    float jump_velocity;
+    float height;
 } Player;
 
 typedef enum {
@@ -34,17 +37,16 @@ void cleanup_engine();
 bool load_engine_assets();
 void free_engine_assets();
 
-void process_input();
+void process_input(World *world, float deltaTime);
 void process_mouse();
+void update_player_position(Player *player, World *world, float dx, float dy, float deltaTime);
 
-void render_faceX(float x, float y, float z, float size, Direction direction, GLuint texture);
 void render_face(float x, float y, float z, float sizeX, float sizeY, GLuint texture, Direction direction);
 void render_world(World* world);
 
-int get_level_from_z(float z, World *world);
 Cell *get_cell(Level *level, int x, int y);
-bool is_solid_cell(Level *level, int x, int y);
-bool is_out_of_bounds(Level *level, int x, int y);
-bool is_within_bounds(Level *level, int x, int y);
+bool is_out_of_xy_bounds(Level *level, int x, int y);
+bool is_within_xy_bounds(Level *level, int x, int y);
+bool get_next_floor_or_ceiling_down(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z);
 
 #endif // ENGINE_H

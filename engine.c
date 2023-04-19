@@ -12,6 +12,8 @@ const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 const int CELL_XY_SCALE  = 2;
 const int CELL_Z_SCALE = 4;
+const float GRAVITY = 5;
+const float JUMP_VELOCITY = -10.0f;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -19,6 +21,7 @@ SDL_GLContext gl_context = NULL;
 
 World world;
 Player player;
+bool free_mode = true;
 
 static bool quit = false;
 
@@ -64,10 +67,12 @@ bool init_engine() {
     // Initialize player object
     player.position.x = first_level.width / 2;
     player.position.y = first_level.height / 2;
-    player.position.z = 0;
+    player.height = CELL_Z_SCALE / 2;
+    player.position.z = -1 -player.height;
+    player.velocity_z = 0.0f;
     player.pitch = 0.0f;
     player.yaw = 0.0f;
-    player.speed = 0.1f; // Adjust this value to set the movement speed
+    player.speed = 10.0f;
 
     // Initialize OpenGL
     glClearColor(0.17f, 0.2f, 0.26f, 1.0f);
@@ -92,14 +97,26 @@ void main_loop() {
 
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
+    Uint32 lastFrameTime = 0;
+
     while (!quit) {
+        Uint32 currentFrameTime = SDL_GetTicks();
+        float deltaTime = (currentFrameTime - lastFrameTime) / 1000.0f;
+
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
                 quit = true;
             }
+
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.scancode == SDL_SCANCODE_F) {
+                    free_mode = !free_mode;
+                    printf("Free mode set to %d\n", free_mode);
+                }
+            }
         }
 
-        process_input(&world);
+        process_input(&world, deltaTime);
         process_mouse();
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -108,80 +125,19 @@ void main_loop() {
         render_world(&world);
 
         SDL_GL_SwapWindow(window);
+
+        SDL_Delay(10);
+        lastFrameTime = currentFrameTime;
     }
 
     SDL_SetRelativeMouseMode(SDL_FALSE);
-    SDL_Delay(50);
 }
 
-void update_player_position(Player *player, World *world, float dx, float dy, float dz) {
-    const float COLLISION_BUFFER = 0.3f * CELL_XY_SCALE;
-
-    float newX = player->position.x + dx * player->speed;
-    float newY = player->position.y + dy * player->speed;
-    float newZ = player->position.z + dz * player->speed;
-
-    int gridX = (int)(newX / CELL_XY_SCALE);
-    int gridY = (int)(newY / CELL_XY_SCALE);
-
-    int levelIndex = get_level_from_z(newZ, world);
-
-    printf("Level index: %d (x: %f y: %f z: %f) \n", levelIndex, newX, newY, newZ);
-
-    bool canMoveX = true;
-    bool canMoveY = true;
-
-    if (levelIndex >= 0) {
-        // Get the corresponding level
-        Level *level = &world->levels[levelIndex];
-
-        canMoveX = !is_solid_cell(level, gridX, gridY);
-        canMoveY = !is_solid_cell(level, gridX, gridY);
-
-        if (canMoveX || canMoveY) {
-            float cellCenterX = gridX * CELL_XY_SCALE + CELL_XY_SCALE / 2.0f;
-            float cellCenterY = gridY * CELL_XY_SCALE + CELL_XY_SCALE / 2.0f;
-
-            if (canMoveX && fabs(newX - cellCenterX) <= (CELL_XY_SCALE / 2.0f + COLLISION_BUFFER)) {
-                canMoveX = false;
-            }
-
-            if (canMoveY && fabs(newY - cellCenterY) <= (CELL_XY_SCALE / 2.0f + COLLISION_BUFFER)) {
-                canMoveY = false;
-            }
-        }
-
-        // Handle corner cases to avoid getting stuck
-        if (!canMoveX && !canMoveY) {
-            float oldX = player->position.x;
-            float oldY = player->position.y;
-
-            player->position.x = newX;
-            canMoveX = !is_solid_cell(level, (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE));
-
-            player->position.x = oldX;
-            player->position.y = newY;
-            canMoveY = !is_solid_cell(level, (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE));
-
-            player->position.y = oldY;
-        }
-    }
-    
-    if (canMoveX) {
-        player->position.x = newX;
-    }
-    if (canMoveY) {
-        player->position.y = newY;
-    }
-    player->position.z = newZ;
-}
-
-void process_input(World *world) {
+void process_input(World *world, float deltaTime) {
     const Uint8 *state = SDL_GetKeyboardState(NULL);
 
     float dx = 0.0f;
     float dy = 0.0f;
-    float dz = 0.0f;
 
     if (state[SDL_SCANCODE_ESCAPE]) {
         quit = true;
@@ -202,14 +158,132 @@ void process_input(World *world) {
         dx += sinf(player.yaw);
         dy -= cosf(player.yaw);
     }
+
     if (state[SDL_SCANCODE_SPACE]) {
-        dz -= 1.0f;
-    }
-    if (state[SDL_SCANCODE_LSHIFT]) {
-        dz += 1.0f;
+        if (free_mode) {
+            player.position.z -= player.speed * deltaTime;
+        }
     }
 
-    update_player_position(&player, world, dx, dy, dz);
+    if (state[SDL_SCANCODE_LCTRL]) {
+        if (free_mode) {
+            player.position.z += player.speed * deltaTime;
+        }
+    }
+
+    update_player_position(&player, world, dx, dy, deltaTime);
+}
+
+void update_player_position(Player *player, World *world,
+                            float dx, float dy, float deltaTime) {
+
+    const float GRAVITY = 9.8f;
+
+    // Handle free mode unrestricted movement
+    if (free_mode) {
+        player->position.x += dx * player->speed * deltaTime;
+        player->position.y += dy * player->speed * deltaTime;
+        player->velocity_z = 0;
+        printf("x %f, y %f, z %f \n", player->position.x, player->position.y, player->position.z);
+        return;
+    }
+
+    // Apply gravity
+    player->velocity_z += GRAVITY * deltaTime;
+
+    // New player position (to be evaluated)
+    float newX = player->position.x + dx * player->speed * deltaTime;
+    float newY = player->position.y + dy * player->speed * deltaTime;
+    float newZ = player->position.z + (player->velocity_z * deltaTime);
+
+    // Get player position in world
+    int grid_x = (int)(newX / CELL_XY_SCALE);
+    int grid_y = (int)(newY / CELL_XY_SCALE);
+
+    // End early if player is not in any level (world layer)
+    int z_level = (int)(newZ / CELL_Z_SCALE);
+    bool is_out_of_z_bounds = (z_level < 0 || z_level >= world->num_levels);
+    if (is_out_of_z_bounds) {
+        player->position.x = newX;
+        player->position.y = newY;
+        player->position.z = newZ;  
+        return;
+    }
+    Level *level = &world->levels[z_level];
+    if (is_out_of_xy_bounds(level, grid_x, grid_y)) {
+        player->position.x = newX;
+        player->position.y = newY;
+        player->position.z = newZ;  
+        return;
+    }
+
+    // Get target cell info
+    Cell *target_cell = get_cell(level, grid_x, grid_y);
+    CellType target_cell_type = target_cell->type;
+    bool target_is_solid = target_cell_type == CELL_SOLID;
+
+    // Determine along what axises the player can move
+    bool can_move_x = !target_is_solid;
+    bool can_move_y = !target_is_solid;
+
+    // Move player where possible
+    if (can_move_x) {
+        player->position.x = newX;
+    }
+    if (can_move_y) {
+        player->position.y = newY;
+    }
+
+    // Z-axis handling
+    // Note: Remember positive z is downwards
+    float next_z_obstacle;
+    bool has_obstacle = get_next_floor_or_ceiling_down(world, grid_x, grid_y, player->position.z, &next_z_obstacle);
+    if (has_obstacle) {
+        float highest_valid_z = next_z_obstacle - player->height;
+        if (newZ > highest_valid_z) {
+            //Player movement down is obstructed
+            player->position.z = highest_valid_z;
+            player->velocity_z = 0.0f;
+            return;
+        }
+    }
+
+    player->position.z = newZ;    
+}
+
+bool get_next_floor_or_ceiling_down(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
+    int z_level = (int)(z_pos / CELL_Z_SCALE);
+    if (z_level >= world->num_levels) {
+        return false;
+    }
+
+    int first_check_level = z_level >= 0 ? z_level : 0; 
+
+    for (int i = first_check_level; i < world->num_levels; i++) {
+        Level *level = &world->levels[i];
+        if (!is_within_xy_bounds(level, cell_x, cell_y)) {
+            continue;
+        }
+        Cell *cell = get_cell(level, cell_x, cell_y);
+
+        //Check ceiling if they are below player
+        if (z_pos < (float)i * CELL_Z_SCALE) {
+            if (cell->ceiling_texture != 0) {
+                *out_obstacle_z = (float)i * CELL_Z_SCALE;
+                float highest_z = *out_obstacle_z - (CELL_Z_SCALE / 2);
+                return true;
+            }
+        }
+
+        //Check 
+        if (cell->floor_texture != 0) {
+            *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
+            float highest_z = *out_obstacle_z - (CELL_Z_SCALE / 2);
+            return true;
+        }
+    }
+
+    return false; // No obstacle found
 }
 
 void process_mouse() {
@@ -275,6 +349,7 @@ void render_face(float x, float y, float z, float width, float height, Direction
     glBindTexture(GL_TEXTURE_2D, texture);
     glBegin(GL_QUADS);
 
+    float ceiling_offset = 0.01f;
     //printf("Rendering face with dir %d at %f, %f, %f with width %f and height %f\n", direction, x, y, z, width, height);
 
     switch (direction) {
@@ -297,10 +372,10 @@ void render_face(float x, float y, float z, float width, float height, Direction
             glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y, z);
             break;
         case DIR_UP:
-            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
-            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y, z);
-            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + width, y + height, z);
-            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + height, z);
+            glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z + ceiling_offset);
+            glTexCoord2f(1.0f, 0.0f); glVertex3f(x + width, y, z + ceiling_offset);
+            glTexCoord2f(1.0f, 1.0f); glVertex3f(x + width, y + height, z + ceiling_offset);
+            glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y + height, z + ceiling_offset);
             break;
         case DIR_NORTH:
             glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, z);
@@ -332,7 +407,7 @@ void render_world(World *world) {
 
     Direction neighbor_dirs[] = {DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH};
 
-    bool render_reference_block = false;
+    bool render_reference_block = true;
     if (render_reference_block) {
         GLuint tex_wall = loadTexture("assets/grey_brick1.bmp");
         GLuint dirt = loadTexture("assets/earth1.bmp");
@@ -386,35 +461,16 @@ void render_world(World *world) {
     }
 }
 
-int get_level_from_z(float z, World *world) {
-    // Calculate the level index based on the player's new height
-    // First level is at the top, levels increase downwards
-    int levelIndex = (int)(z / CELL_Z_SCALE);
-    // Make sure the level index is within bounds, -1 to turn of collision detection
-    if (z < 0 || levelIndex < 0 || levelIndex > (world->num_levels - 1)) {
-        levelIndex = -1;
-    }
-    return levelIndex;
-}
-
-bool is_solid_cell(Level *level, int x, int y) {
-    if (is_within_bounds(level, x, y)) {
-        Cell *cell = &level->cells[y][x];
-        return cell->type == CELL_SOLID;
-    }
-    return false;
-}
-
-bool is_out_of_bounds(Level *level, int x, int y) {
+bool is_out_of_xy_bounds(Level *level, int x, int y) {
     return x < 0 || x >= level->width || y < 0 || y >= level->height;
 }
 
-bool is_within_bounds(Level *level, int x, int y) {
+bool is_within_xy_bounds(Level *level, int x, int y) {
     return x >= 0 && x < level->width && y >= 0 && y < level->height;
 }
 
 Cell *get_cell(Level *level, int x, int y) {
-    if (is_out_of_bounds(level, x, y)) {
+    if (is_out_of_xy_bounds(level, x, y)) {
         return NULL;
     }
     return &level->cells[y][x];

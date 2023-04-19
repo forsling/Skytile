@@ -53,6 +53,7 @@
         "inttypes.h": "c",
         "glu.h": "c",
         "gl.h": "c",
-        "sdl_opengl.h": "c"
+        "sdl_opengl.h": "c",
+        "world.h": "c"
     }
 }
