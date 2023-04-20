@@ -12,8 +12,7 @@ const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 const int CELL_XY_SCALE  = 2;
 const int CELL_Z_SCALE = 4;
-const float GRAVITY = 5;
-const float JUMP_VELOCITY = -10.0f;
+const float GRAVITY = 9.82f;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -73,6 +72,7 @@ bool init_engine() {
     player.pitch = 0.0f;
     player.yaw = 0.0f;
     player.speed = 10.0f;
+    player.jump_velocity = -8.0f;
 
     // Initialize OpenGL
     glClearColor(0.17f, 0.2f, 0.26f, 1.0f);
@@ -138,6 +138,7 @@ void process_input(World *world, float deltaTime) {
 
     float dx = 0.0f;
     float dy = 0.0f;
+    bool isJumping = false;
 
     if (state[SDL_SCANCODE_ESCAPE]) {
         quit = true;
@@ -162,13 +163,14 @@ void process_input(World *world, float deltaTime) {
     if (state[SDL_SCANCODE_SPACE]) {
         if (free_mode) {
             player.position.z -= player.speed * deltaTime;
-        }
+        } else if (player.velocity_z == 0.0f) { // Jump only when the player is on the ground
+            player.velocity_z = player.jump_velocity;
+            isJumping = true;
+        } 
     }
-
-    if (state[SDL_SCANCODE_LCTRL]) {
+    if (state[SDL_SCANCODE_LSHIFT]) {
         if (free_mode) {
-            player.position.z += player.speed * deltaTime;
-        }
+            player.position.z += player.speed * deltaTime;        }
     }
 
     update_player_position(&player, world, dx, dy, deltaTime);
@@ -237,11 +239,13 @@ void update_player_position(Player *player, World *world,
     // Z-axis handling
     // Note: Remember positive z is downwards
     float next_z_obstacle;
-    bool has_obstacle = get_next_floor_or_ceiling_down(world, grid_x, grid_y, player->position.z, &next_z_obstacle);
-    if (has_obstacle) {
+    bool has_obstacle_down = get_next_floor_or_ceiling_down(world, grid_x, grid_y, player->position.z, &next_z_obstacle);
+    if (has_obstacle_down) {
         float highest_valid_z = next_z_obstacle - player->height;
         if (newZ > highest_valid_z) {
-            //Player movement down is obstructed
+            // Player movement down is obstructed
+            // TODO: Check if player moved to close to floor downwards, or crossed floor upwards.
+            // If the latter case, then move the player back down under the floor instead.
             player->position.z = highest_valid_z;
             player->velocity_z = 0.0f;
             return;

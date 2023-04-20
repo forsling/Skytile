@@ -15,8 +15,8 @@ typedef struct {
 
 typedef struct {
     Vec3 position;
-    float pitch, yaw; // Camera rotation
-    float speed; // Movement speed
+    float pitch, yaw;
+    float speed;
     float velocity_z;
     float jump_velocity;
     float height;
