@@ -12,7 +12,7 @@ const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 const int CELL_XY_SCALE  = 2;
 const int CELL_Z_SCALE = 4;
-const float GRAVITY = 9.82f;
+const float GRAVITY = 15.0f;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -20,7 +20,7 @@ SDL_GLContext gl_context = NULL;
 
 World world;
 Player player;
-bool free_mode = true;
+bool free_mode = false;
 
 static bool quit = false;
 
@@ -179,8 +179,6 @@ void process_input(World *world, float deltaTime) {
 void update_player_position(Player *player, World *world,
                             float dx, float dy, float deltaTime) {
 
-    const float GRAVITY = 9.8f;
-
     // Handle free mode unrestricted movement
     if (free_mode) {
         player->position.x += dx * player->speed * deltaTime;
@@ -243,11 +241,14 @@ void update_player_position(Player *player, World *world,
     if (has_obstacle_down) {
         float highest_valid_z = next_z_obstacle - player->height;
         if (newZ > highest_valid_z) {
-            // Player movement down is obstructed
-            // TODO: Check if player moved to close to floor downwards, or crossed floor upwards.
-            // If the latter case, then move the player back down under the floor instead.
-            player->position.z = highest_valid_z;
-            player->velocity_z = 0.0f;
+            // Player z movement is obstructed
+            if (player->velocity_z >= 0) {
+                player->position.z = highest_valid_z;
+                player->velocity_z = 0.0f;
+            } else {
+                player->position.z = next_z_obstacle + 0.01f;
+                player->velocity_z = 0.01f;
+            }
             return;
         }
     }
