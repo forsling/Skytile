@@ -216,44 +216,8 @@ void update_player_position(Player *player, World *world,
     float newX = player->position.x + dx * player->speed * deltaTime;
     float newY = player->position.y + dy * player->speed * deltaTime;
     float newZ = player->position.z + (player->velocity_z * deltaTime);
-
-    // Get player position in world
     int grid_x = (int)(newX / CELL_XY_SCALE);
     int grid_y = (int)(newY / CELL_XY_SCALE);
-
-    // End early if player is not in any level (world layer)
-    int z_level = (int)(newZ / CELL_Z_SCALE);
-    bool is_out_of_z_bounds = (z_level < 0 || z_level >= world->num_levels);
-    if (is_out_of_z_bounds) {
-        player->position.x = newX;
-        player->position.y = newY;
-        player->position.z = newZ;  
-        return;
-    }
-    Level *level = &world->levels[z_level];
-    if (is_out_of_xy_bounds(level, grid_x, grid_y)) {
-        player->position.x = newX;
-        player->position.y = newY;
-        player->position.z = newZ;  
-        return;
-    }
-
-    // Get target cell info
-    Cell *target_cell = get_cell(level, grid_x, grid_y);
-    CellType target_cell_type = target_cell->type;
-    bool target_is_solid = target_cell_type == CELL_SOLID;
-
-    // Determine along what axises the player can move
-    bool can_move_x = !target_is_solid;
-    bool can_move_y = !target_is_solid;
-
-    // Move player where possible
-    if (can_move_x) {
-        player->position.x = newX;
-    }
-    if (can_move_y) {
-        player->position.y = newY;
-    }
 
     // z-axis handling
     float next_z_obstacle;
@@ -269,11 +233,42 @@ void update_player_position(Player *player, World *world,
                 player->position.z = next_z_obstacle + 0.01f;
                 player->velocity_z = 0.01f;
             }
-            return;
+        } else {
+            player->position.z = newZ;
         }
+    } else {
+        player->position.z = newZ;
     }
 
-    player->position.z = newZ;
+    // Just move player if they are above or below the world
+    int z_level = (int)floor(player->position.z / CELL_Z_SCALE);
+    bool is_out_of_z_bounds = (z_level < 0 || z_level >= world->num_levels);
+    if (is_out_of_z_bounds) {
+        player->position.x = newX;
+        player->position.y = newY;
+        return;
+    }
+
+    Level *level = &world->levels[z_level];
+
+    // Move player if they are outside of the level (XY)
+    if (is_out_of_xy_bounds(level, grid_x, grid_y)) {
+        player->position.x = newX;
+        player->position.y = newY;
+        player->position.z = newZ;  
+        return;
+    }
+
+    // Get target cell info
+    Cell *target_cell = get_cell(level, grid_x, grid_y);
+    CellType target_cell_type = target_cell->type;
+    bool target_is_solid = target_cell_type == CELL_SOLID;
+
+    // Handle XY movement
+    if (target_cell_type != CELL_SOLID) {
+        player->position.x = newX;
+        player->position.y = newY;
+    }
 }
 
 bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
