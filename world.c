@@ -1,8 +1,14 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "world.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <dirent.h>
+
+Cell **cell_definitions;
+SDL_Surface* base_bg_texture;
+
 
 bool load_world(World* world) {
     DIR* dir;
@@ -22,13 +28,15 @@ bool load_world(World* world) {
         }
     }
 
+    base_bg_texture = load_surface("assets/bg.png");
+
     // Allocate memory for levels
     world->num_levels = level_count;
     world->levels = malloc(level_count * sizeof(Level));
 
     // Reset directory position
     rewinddir(dir);
-
+    
     // Load each level
     int level_index = 0;
     while ((entry = readdir(dir)) != NULL) {
@@ -97,18 +105,43 @@ Cell get_cell_definition_from_color(SDL_Color color) {
     else if (color.r == 0x40 && color.g == 0x40 && color.b == 0x40) {
         cell_def.type = CELL_SOLID;
         cell_def.color = color;
-        cell_def.floor_texture = loadTexture("assets/earth1.bmp");
-        cell_def.ceiling_texture = loadTexture("assets/grey_tile1.bmp");
-        cell_def.wall_texture = loadTexture("assets/grey_brick1.bmp");
+        cell_def.floor_texture = create_texture(base_bg_texture, 2016, 32, 32, 32);
+        cell_def.ceiling_texture = create_texture(base_bg_texture, 256, 160, 32, 32);
+        cell_def.wall_texture = create_texture(base_bg_texture, 1280, 192, 32, 31);
     }
     // #808080 - Stone floor marble pattern ceiling
     else if (color.r == 0x80 && color.g == 0x80 && color.b == 0x80) {
         cell_def.type = CELL_OPEN;
         cell_def.color = color;
-        cell_def.floor_texture = loadTexture("assets/stone_floor1.bmp");
-        cell_def.ceiling_texture = loadTexture("assets/marble_pattern1.bmp");
+        cell_def.floor_texture = create_texture(base_bg_texture, 128, 192, 32, 32);
+        cell_def.ceiling_texture = create_texture(base_bg_texture, 256, 160, 32, 32);
         cell_def.wall_texture = 0;
     }
+    // #B200FF - Mossy floors
+    else if (color.r == 0xB2 && color.g == 0x00 && color.b == 0xFF) {
+        cell_def.type = CELL_SOLID;
+        cell_def.color = color;
+        cell_def.floor_texture = create_texture(base_bg_texture, 1439, 192, 33, 31);
+        cell_def.ceiling_texture = create_texture(base_bg_texture, 1439, 192, 33, 31);
+        cell_def.wall_texture = create_texture(base_bg_texture, 1471, 192, 33, 31);
+    }
+    // #267F00 (Green) Grass block
+    else if (color.r == 0x26 && color.g == 0x7F && color.b == 0x00) {
+        cell_def.type = CELL_OPEN;
+        cell_def.color = color;
+        cell_def.floor_texture = create_texture(base_bg_texture, 1568, 223, 32, 32);
+        cell_def.ceiling_texture = 0;
+        cell_def.wall_texture = 0;
+    }
+    // #00C0C0 (Light Blue) - Ice floor
+    else if (color.r == 0x00 && color.g == 0xC0 && color.b == 0xC0) {
+        cell_def.type = CELL_OPEN;
+        cell_def.color = color;
+        cell_def.floor_texture = create_texture(base_bg_texture, 1537, 351, 32, 32);
+        cell_def.ceiling_texture = 0;
+        cell_def.wall_texture = 0;
+    }
+
     // Default - Open space
     else {
         cell_def.type = CELL_OPEN;
@@ -121,10 +154,10 @@ Cell get_cell_definition_from_color(SDL_Color color) {
     return cell_def;
 }
 
-GLuint loadTexture(const char *filename) {
-    SDL_Surface *image = IMG_Load(filename);
+// Function to create a GLuint texture from a sub-region of the given SDL_Surface
+GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height) {
     if (!image) {
-        printf("Error: %s\n", IMG_GetError());
+        printf("Error: Invalid SDL_Surface\n");
         return 0;
     }
 
@@ -138,10 +171,21 @@ GLuint loadTexture(const char *filename) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     GLenum format = (image->format->BytesPerPixel == 4) ? GL_RGBA : GL_RGB;
-    glTexImage2D(GL_TEXTURE_2D, 0, format, image->w, image->h, 0, format, GL_UNSIGNED_BYTE, image->pixels);
+
+    // Create a new SDL_Surface for the sub-region
+    SDL_Surface* subImage = SDL_CreateRGBSurface(0, width, height, image->format->BitsPerPixel,
+                                                 image->format->Rmask, image->format->Gmask,
+                                                 image->format->Bmask, image->format->Amask);
+
+    // Copy the sub-region to the new SDL_Surface
+    SDL_Rect srcRect = {x, y, width, height};
+    SDL_BlitSurface(image, &srcRect, subImage, NULL);
+
+    // Create the texture from the sub-region surface
+    glTexImage2D(GL_TEXTURE_2D, 0, format, subImage->w, subImage->h, 0, format, GL_UNSIGNED_BYTE, subImage->pixels);
 
     glBindTexture(GL_TEXTURE_2D, 0);
-    SDL_FreeSurface(image);
+    SDL_FreeSurface(subImage);
 
     return texture;
 }
@@ -168,10 +212,36 @@ Uint32 get_pixel32(SDL_Surface *surface, int x, int y) {
     }
 }
 
-SDL_Surface* load_bitmap(const char* file_path) {
-    SDL_Surface* surface = IMG_Load(file_path);
-    if (!surface) {
-        printf("Unable to load bitmap: %s\n", IMG_GetError());
+SDL_Surface* load_surface(const char *filename) {
+    SDL_Surface *image = IMG_Load(filename);
+    if (!image) {
+        printf("Error: %s\n", IMG_GetError());
+        return NULL;
     }
-    return surface;
+    return image;
+}
+
+GLuint loadTexture(const char *filename) {
+    SDL_Surface *image = IMG_Load(filename);
+    if (!image) {
+        printf("Error: %s\n", IMG_GetError());
+        return 0;
+    }
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GLenum format = (image->format->BytesPerPixel == 4) ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, image->w, image->h, 0, format, GL_UNSIGNED_BYTE, image->pixels);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    SDL_FreeSurface(image);
+
+    return texture;
 }

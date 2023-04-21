@@ -427,16 +427,16 @@ void render_world(World *world) {
 
     Direction neighbor_dirs[] = {DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH};
 
-    bool render_reference_block = true;
-    if (render_reference_block) {
-        GLuint tex_wall = loadTexture("assets/grey_brick1.bmp");
-        GLuint dirt = loadTexture("assets/earth1.bmp");
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, tex_wall);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, dirt);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, tex_wall);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, tex_wall);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, tex_wall);
-    }
+    // bool render_reference_block = true;
+    // if (render_reference_block) {
+    //     GLuint tex_wall = load_texture("assets/grey_brick1.bmp");
+    //     GLuint dirt = load_texture("assets/earth1.bmp");
+    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, tex_wall);
+    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, dirt);
+    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, tex_wall);
+    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, tex_wall);
+    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, tex_wall);
+    // }
 
     for (int z = 0; z < world->num_levels; z++) {
         Level *level = &world->levels[z];
