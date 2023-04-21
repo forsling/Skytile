@@ -47,6 +47,6 @@ void render_world(World* world);
 Cell *get_cell(Level *level, int x, int y);
 bool is_out_of_xy_bounds(Level *level, int x, int y);
 bool is_within_xy_bounds(Level *level, int x, int y);
-bool get_next_floor_or_ceiling_down(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z);
+bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z);
 
 #endif // ENGINE_H

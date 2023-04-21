@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
+#include <stdarg.h>
+#include <stdlib.h>
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_image.h>
@@ -8,10 +11,13 @@
 #include "engine.h"
 #include "world.h"
 
+const bool DEBUG_LOG = true;
+
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 const int CELL_XY_SCALE  = 2;
 const int CELL_Z_SCALE = 4;
+const float COLLISION_BUFFER = 0.3f * CELL_XY_SCALE;
 const float GRAVITY = 15.0f;
 
 SDL_Window *window = NULL;
@@ -23,6 +29,19 @@ Player player;
 bool free_mode = false;
 
 static bool quit = false;
+
+void debuglog(int one_in_n_chance, const char* format, ...)
+{
+    if (!debuglog) {
+        return;
+    }
+    if (rand() % one_in_n_chance == 0) {
+        va_list args;
+        va_start(args, format);
+        vprintf(format, args);
+        va_end(args);
+    }
+}
 
 bool init_engine() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -60,6 +79,8 @@ bool init_engine() {
     if (!load_engine_assets()) {
         return false;
     }
+
+    srand(time(NULL));
 
     Level first_level = world.levels[0];
 
@@ -184,7 +205,7 @@ void update_player_position(Player *player, World *world,
         player->position.x += dx * player->speed * deltaTime;
         player->position.y += dy * player->speed * deltaTime;
         player->velocity_z = 0;
-        printf("x %f, y %f, z %f \n", player->position.x, player->position.y, player->position.z);
+        debuglog(4, "x %f, y %f, z %f \n", player->position.x, player->position.y, player->position.z);
         return;
     }
 
@@ -234,10 +255,9 @@ void update_player_position(Player *player, World *world,
         player->position.y = newY;
     }
 
-    // Z-axis handling
-    // Note: Remember positive z is downwards
+    // z-axis handling
     float next_z_obstacle;
-    bool has_obstacle_down = get_next_floor_or_ceiling_down(world, grid_x, grid_y, player->position.z, &next_z_obstacle);
+    bool has_obstacle_down = get_next_z_obstacle(world, grid_x, grid_y, player->position.z, &next_z_obstacle);
     if (has_obstacle_down) {
         float highest_valid_z = next_z_obstacle - player->height;
         if (newZ > highest_valid_z) {
@@ -253,10 +273,10 @@ void update_player_position(Player *player, World *world,
         }
     }
 
-    player->position.z = newZ;    
+    player->position.z = newZ;
 }
 
-bool get_next_floor_or_ceiling_down(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
+bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
     int z_level = (int)(z_pos / CELL_Z_SCALE);
     if (z_level >= world->num_levels) {
         return false;
@@ -273,17 +293,17 @@ bool get_next_floor_or_ceiling_down(World *world, int cell_x, int cell_y, float 
 
         //Check ceiling if they are below player
         if (z_pos < (float)i * CELL_Z_SCALE) {
-            if (cell->ceiling_texture != 0) {
+            if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
                 *out_obstacle_z = (float)i * CELL_Z_SCALE;
-                float highest_z = *out_obstacle_z - (CELL_Z_SCALE / 2);
+                debuglog(8, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
                 return true;
             }
         }
 
-        //Check 
-        if (cell->floor_texture != 0) {
+        //Check floors
+        if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
             *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
-            float highest_z = *out_obstacle_z - (CELL_Z_SCALE / 2);
+            debuglog(8, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
             return true;
         }
     }
