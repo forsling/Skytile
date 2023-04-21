@@ -122,7 +122,7 @@ void main_loop() {
 
     while (!quit) {
         Uint32 currentFrameTime = SDL_GetTicks();
-        float deltaTime = (currentFrameTime - lastFrameTime) / 1000.0f;
+        float deltaTime = fmin(((currentFrameTime - lastFrameTime) / 1000.0f), 0.1f);
 
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
