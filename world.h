@@ -32,12 +32,13 @@ typedef struct {
 bool load_world(World* world);
 void free_world(World* world);
 void parse_level_from_surface(SDL_Surface* surface, Level* level);
-Cell get_cell_definition_from_color(SDL_Color color);
 Cell* get_cell(Level* level, int x, int y);
 Uint32 get_pixel32(SDL_Surface *surface, int x, int y);
 GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height);
 SDL_Surface* load_surface(const char *filename);
 GLuint loadTexture(const char *filename);
-
+Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num_definitions);
+Cell* read_cell_definitions(const char *filename, int *num_definitions);
+int parse_cell_definition(const char *line, Cell *def);
 
 #endif // WORLD_H

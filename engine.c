@@ -26,7 +26,7 @@ SDL_GLContext gl_context = NULL;
 
 World world;
 Player player;
-bool free_mode = false;
+bool free_mode = true;
 
 static bool quit = false;
 
@@ -290,7 +290,7 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
         if (z_pos < (float)i * CELL_Z_SCALE) {
             if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
                 *out_obstacle_z = (float)i * CELL_Z_SCALE;
-                debuglog(8, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
+                //debuglog(8, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
                 return true;
             }
         }
@@ -298,7 +298,7 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
         //Check floors
         if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
             *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
-            debuglog(8, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
+            //debuglog(8, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
             return true;
         }
     }
@@ -427,16 +427,16 @@ void render_world(World *world) {
 
     Direction neighbor_dirs[] = {DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH};
 
-    // bool render_reference_block = true;
-    // if (render_reference_block) {
-    //     GLuint tex_wall = load_texture("assets/grey_brick1.bmp");
-    //     GLuint dirt = load_texture("assets/earth1.bmp");
-    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, tex_wall);
-    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, dirt);
-    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, tex_wall);
-    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, tex_wall);
-    //     render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, tex_wall);
-    // }
+    bool render_reference_block = true;
+    if (render_reference_block) {
+        GLuint tex_wall = loadTexture("assets/grey_brick1.bmp");
+        GLuint dirt = loadTexture("assets/earth1.bmp");
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, tex_wall);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, dirt);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, tex_wall);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, tex_wall);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, tex_wall);
+    }
 
     for (int z = 0; z < world->num_levels; z++) {
         Level *level = &world->levels[z];

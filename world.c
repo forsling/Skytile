@@ -6,9 +6,10 @@
 #include <SDL2/SDL_image.h>
 #include <dirent.h>
 
-Cell **cell_definitions;
+Cell *cell_definitions;
+int num_definitions;
 SDL_Surface* base_bg_texture;
-
+Cell default_cell;
 
 bool load_world(World* world) {
     DIR* dir;
@@ -36,7 +37,18 @@ bool load_world(World* world) {
 
     // Reset directory position
     rewinddir(dir);
-    
+
+    default_cell.type = CELL_OPEN;
+    SDL_Color cyan = {0, 255, 255};
+    default_cell.color = cyan;
+    default_cell.floor_texture = 0;
+    default_cell.ceiling_texture = 0;
+    default_cell.wall_texture = 0;
+
+    // Load cell definitions
+    num_definitions = 0;
+    cell_definitions = read_cell_definitions("cell_definitions.txt", &num_definitions);
+
     // Load each level
     int level_index = 0;
     while ((entry = readdir(dir)) != NULL) {
@@ -85,73 +97,111 @@ void parse_level_from_surface(SDL_Surface* surface, Level* level) {
             SDL_GetRGB(get_pixel32(surface, x, y), surface->format, &r, &g, &b);
             SDL_Color color = {r, g, b, 255};
        
-            level->cells[y][x] = get_cell_definition_from_color(color);
+            level->cells[y][x] = *get_cell_definition_from_color(color, cell_definitions, num_definitions);
         }
     }
 }
 
-Cell get_cell_definition_from_color(SDL_Color color) {
-    Cell cell_def;
-
-    // #FF00FF (Magenta) - Void block
-    if (color.r == 0xFF && color.g == 0x00 && color.b == 0xFF) {
-        cell_def.type = CELL_SOLID;
-        cell_def.color = color;
-        cell_def.floor_texture = 0;
-        cell_def.ceiling_texture = 0;
-        cell_def.wall_texture = 0;
-    }
-    // #404040 - Brick wall
-    else if (color.r == 0x40 && color.g == 0x40 && color.b == 0x40) {
-        cell_def.type = CELL_SOLID;
-        cell_def.color = color;
-        cell_def.floor_texture = create_texture(base_bg_texture, 2016, 32, 32, 32);
-        cell_def.ceiling_texture = create_texture(base_bg_texture, 256, 160, 32, 32);
-        cell_def.wall_texture = create_texture(base_bg_texture, 1280, 192, 32, 31);
-    }
-    // #808080 - Stone floor marble pattern ceiling
-    else if (color.r == 0x80 && color.g == 0x80 && color.b == 0x80) {
-        cell_def.type = CELL_OPEN;
-        cell_def.color = color;
-        cell_def.floor_texture = create_texture(base_bg_texture, 128, 192, 32, 32);
-        cell_def.ceiling_texture = create_texture(base_bg_texture, 256, 160, 32, 32);
-        cell_def.wall_texture = 0;
-    }
-    // #B200FF - Mossy floors
-    else if (color.r == 0xB2 && color.g == 0x00 && color.b == 0xFF) {
-        cell_def.type = CELL_SOLID;
-        cell_def.color = color;
-        cell_def.floor_texture = create_texture(base_bg_texture, 1439, 192, 33, 31);
-        cell_def.ceiling_texture = create_texture(base_bg_texture, 1439, 192, 33, 31);
-        cell_def.wall_texture = create_texture(base_bg_texture, 1471, 192, 33, 31);
-    }
-    // #267F00 (Green) Grass block
-    else if (color.r == 0x26 && color.g == 0x7F && color.b == 0x00) {
-        cell_def.type = CELL_OPEN;
-        cell_def.color = color;
-        cell_def.floor_texture = create_texture(base_bg_texture, 1568, 223, 32, 32);
-        cell_def.ceiling_texture = 0;
-        cell_def.wall_texture = 0;
-    }
-    // #00C0C0 (Light Blue) - Ice floor
-    else if (color.r == 0x00 && color.g == 0xC0 && color.b == 0xC0) {
-        cell_def.type = CELL_OPEN;
-        cell_def.color = color;
-        cell_def.floor_texture = create_texture(base_bg_texture, 1537, 351, 32, 32);
-        cell_def.ceiling_texture = 0;
-        cell_def.wall_texture = 0;
+Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num_definitions) {
+    for (int i = 0; i < num_definitions; i++) {
+        Cell *def = &definitions[i];
+        if (color.r == def->color.r && color.g == def->color.g && color.b == def->color.b) {
+            return def;
+        }
     }
 
-    // Default - Open space
-    else {
-        cell_def.type = CELL_OPEN;
-        cell_def.color = color;
-        cell_def.floor_texture = 0;
-        cell_def.ceiling_texture = 0;
-        cell_def.wall_texture = 0;
+    return &default_cell;
+}
+
+Cell *read_cell_definitions(const char *filename, int *num_definitions) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Error: Cannot open cell definitions file: %s\n", filename);
+        return NULL;
     }
 
-    return cell_def;
+    int capacity = 10;
+    Cell *definitions = (Cell *)malloc(capacity * sizeof(Cell));
+    *num_definitions = 0;
+    
+    char line[256];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        // Skip comment lines
+        if (line[0] == '#') {
+            continue;
+        }
+
+        // Check if we need to expand the capacity of the array
+        if (*num_definitions >= capacity) {
+            capacity *= 2;
+            definitions = (Cell *)realloc(definitions, capacity * sizeof(Cell));
+        }
+
+        // Read and process the line
+        Cell *def = &definitions[*num_definitions];
+        if (parse_cell_definition(line, def)) {
+            // Increment the index only if the line was processed successfully
+            (*num_definitions)++;
+        }
+    }
+
+    fclose(file);
+    return definitions;
+}
+
+int parse_cell_definition(const char *line, Cell *def) {
+    unsigned int r, g, b;
+    char type_str[32];
+    char c_str[32], f_str[32], w_str[32];
+    int cx, cy, cw, ch, fx, fy, fw, fh, wx, wy, ww, wh;
+
+    int num_parsed = sscanf(line, " %02X%02X%02X %31s %31s %31s %31s",
+                            &r, &g, &b,
+                            type_str,
+                            c_str,
+                            f_str,
+                            w_str);
+
+    if (num_parsed == 7) {
+        def->color.r = (Uint8)r;
+        def->color.g = (Uint8)g;
+        def->color.b = (Uint8)b;
+
+        if (strcmp(type_str, "SOLID") == 0) {
+            def->type = CELL_SOLID;
+        } else if (strcmp(type_str, "OPEN") == 0) {
+            def->type = CELL_OPEN;
+        } else {
+            printf("Error: Invalid cell type: %s\n", type_str);
+            return 0;
+        }
+
+        if (strcmp(c_str, "0") == 0) {
+            def->ceiling_texture = 0;
+        } else {
+            sscanf(c_str, "%d,%d,%d,%d", &cx, &cy, &cw, &ch);
+            def->ceiling_texture = create_texture(base_bg_texture, cx, cy, cw, ch);
+        }
+
+        if (strcmp(f_str, "0") == 0) {
+            def->floor_texture = 0;
+        } else {
+            sscanf(f_str, "%d,%d,%d,%d", &fx, &fy, &fw, &fh);
+            def->floor_texture = create_texture(base_bg_texture, fx, fy, fw, fh);
+        }
+
+        if (strcmp(w_str, "0") == 0) {
+            def->wall_texture = 0;
+        } else {
+            sscanf(w_str, "%d,%d,%d,%d", &wx, &wy, &ww, &wh);
+            def->wall_texture = create_texture(base_bg_texture, wx, wy, ww, wh);
+        }
+
+        return 1;
+    }
+
+    printf("Error: Invalid cell definition line: %s\n", line);
+    return 0;
 }
 
 // Function to create a GLuint texture from a sub-region of the given SDL_Surface
