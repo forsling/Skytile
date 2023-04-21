@@ -152,17 +152,18 @@ Cell *read_cell_definitions(const char *filename, int *num_definitions) {
 int parse_cell_definition(const char *line, Cell *def) {
     unsigned int r, g, b;
     char type_str[32];
-    char c_str[32], f_str[32], w_str[32];
+    char c_str[32], f_str[32], w_str[32], name_str[64];
     int cx, cy, cw, ch, fx, fy, fw, fh, wx, wy, ww, wh;
 
-    int num_parsed = sscanf(line, " %02X%02X%02X %31s %31s %31s %31s",
+    int num_parsed = sscanf(line, " %02X%02X%02X %31s %31s %31s %31s %255[^\n]",
                             &r, &g, &b,
                             type_str,
                             c_str,
                             f_str,
-                            w_str);
+                            w_str,
+                            name_str);
 
-    if (num_parsed == 7) {
+    if (num_parsed == 8) {
         def->color.r = (Uint8)r;
         def->color.g = (Uint8)g;
         def->color.b = (Uint8)b;
@@ -196,6 +197,8 @@ int parse_cell_definition(const char *line, Cell *def) {
             sscanf(w_str, "%d,%d,%d,%d", &wx, &wy, &ww, &wh);
             def->wall_texture = create_texture(base_bg_texture, wx, wy, ww, wh);
         }
+
+        printf("Loaded cell definition: %s\n", name_str);
 
         return 1;
     }

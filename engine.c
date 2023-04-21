@@ -26,7 +26,7 @@ SDL_GLContext gl_context = NULL;
 
 World world;
 Player player;
-bool free_mode = true;
+bool free_mode = false;
 
 static bool quit = false;
 
