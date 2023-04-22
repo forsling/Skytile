@@ -73,16 +73,19 @@ bool init_engine() {
     Level first_level = world.levels[0];
 
     // Initialize player object
-    player.position.x = 11.5f;
-    player.position.y = 11.5f;
-    player.height = CELL_Z_SCALE / 2;
-    player.position.z = 0 - player.height;
-    player.velocity_z = 0.0f;
-    player.pitch = 0.0f;
-    player.yaw = 0.0f;
-    player.speed = 10.0f;
-    player.jump_velocity = -8.0f;
-    player.size = 0.3f * CELL_XY_SCALE;
+    player = (struct Player) {
+        .position.x = 7.5f,
+        .position.y = 7.5f,
+        .position.z = 0.0f,
+        .height = CELL_Z_SCALE / 2,
+        .velocity_z = 0.0f,
+        .pitch = 0.0f,
+        .yaw = 0.0f,
+        .speed = 10.0f,
+        .jump_velocity = -8.0f,
+        .size = 0.3f * CELL_XY_SCALE
+    };
+    player.position.z = 0.0f - player.height;
 
     // Initialize OpenGL
     glClearColor(0.17f, 0.2f, 0.26f, 1.0f);
@@ -240,8 +243,9 @@ void update_player_position(Player *player, World *world,
 
     // Update player position if the target cell is not solid
     ivec3 newpos = get_grid_pos3(target_x, target_y, target_z);
-    Cell* cell_candidate = get_world_cell(world, newpos);
-    if (cell_candidate == NULL || cell_candidate->type != CELL_SOLID) {
+    Cell* cell_candidate;
+    bool got_cell = get_world_cell(world, newpos, &cell_candidate);
+    if (!got_cell || cell_candidate->type != CELL_SOLID) {
         player->position.x = target_x;
         player->position.y = target_y;
         player->position.z = target_z;
@@ -249,8 +253,9 @@ void update_player_position(Player *player, World *world,
     } else {
         debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) Rejected\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
         ivec3 old_grid_pos = get_grid_pos3(player->position.x, player->position.y, player->position.z);
-        Cell* cell_candidate = get_world_cell(world, old_grid_pos);
-        if (cell_candidate != NULL && cell_candidate->type == CELL_SOLID) {
+        Cell* cell_candidate;
+        bool got_cell = get_world_cell(world, old_grid_pos, &cell_candidate);
+        if (got_cell && cell_candidate->type == CELL_SOLID) {
             player->position.z -= CELL_Z_SCALE;
         }
     }

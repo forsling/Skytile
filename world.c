@@ -470,14 +470,14 @@ Cell *get_cell(Level *level, int x, int y) {
     return &level->cells[y][x];
 }
 
-Cell *get_world_cell(World *world, ivec3 grid_position) {
+bool get_world_cell(World *world, ivec3 grid_position, Cell** out_cell) {
     if (grid_position.z < 0 || grid_position.z >= world->num_levels) {
-        return NULL;
+        return false;
     }
     Level *level = &world->levels[grid_position.z];
-    if (grid_position.y > level->width || grid_position.x > level->height) {
-        return NULL;
+    if (grid_position.y >= level->width || grid_position.x >= level->height) {
+        return false;
     }
-    Cell *cell = &level->cells[grid_position.y][grid_position.x];
-    return cell;
+    *out_cell = &level->cells[grid_position.y][grid_position.x];
+    return true;
 }

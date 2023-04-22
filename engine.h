@@ -8,7 +8,7 @@
 #include "world.h"
 #include "vector.h"
 
-typedef struct {
+typedef struct Player {
     Vec3 position;
     float pitch, yaw;
     float speed;

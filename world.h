@@ -57,7 +57,7 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
 Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, float collision_buffer);
 CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int *num_cells);
 
-Cell *get_world_cell(World *world, ivec3 grid_position);
+bool get_world_cell(World *world, ivec3 grid_position, Cell** out_cell);
 ivec2 get_grid_pos2(float x, float y);
 ivec3 get_grid_pos3(float x, float y, float z);
 
