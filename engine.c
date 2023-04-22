@@ -73,10 +73,10 @@ bool init_engine() {
     Level first_level = world.levels[0];
 
     // Initialize player object
-    player.position.x = 2.5f;
-    player.position.y = 3.9f;
+    player.position.x = 11.5f;
+    player.position.y = 11.5f;
     player.height = CELL_Z_SCALE / 2;
-    player.position.z = 8 -player.height;
+    player.position.z = 0 - player.height;
     player.velocity_z = 0.0f;
     player.pitch = 0.0f;
     player.yaw = 0.0f;
@@ -202,64 +202,54 @@ void update_player_position(Player *player, World *world,
     player->velocity_z += GRAVITY * deltaTime;
 
     // New player position (to be evaluated)
-    float newX = player->position.x + dx * player->speed * deltaTime;
-    float newY = player->position.y + dy * player->speed * deltaTime;
-    float newZ = player->position.z + (player->velocity_z * deltaTime);
+    float target_x = player->position.x + dx * player->speed * deltaTime;
+    float target_y = player->position.y + dy * player->speed * deltaTime;
+    float target_z = player->position.z + (player->velocity_z * deltaTime);
+    ivec3 target_grid_pos = get_grid_pos3(target_x, target_y, target_z);
 
     int z_level = (int)floor(player->position.z / CELL_Z_SCALE);
     Level *level = &world->levels[z_level];
 
     // Calculate the destination position
     Vec2 source = {player->position.x, player->position.y};
-    Vec2 destination = {newX, newY};
+    Vec2 destination = {target_x, target_y};
 
     // Update the player's position based on the furthest legal position
     if (z_level >= 0) {
         Vec2 furthest_legal_position = get_furthest_legal_position(level, source, destination, player->size);
-        newX = furthest_legal_position.x;
-        newY = furthest_legal_position.y;
+        target_x = furthest_legal_position.x;
+        target_y = furthest_legal_position.y;
     }
-
-    int grid_x = (int)(newX / CELL_XY_SCALE);
-    int grid_y = (int)(newY / CELL_XY_SCALE);
 
     // z-axis handling
     float next_z_obstacle;
-    bool has_obstacle_down = get_next_z_obstacle(world, grid_x, grid_y, newZ, &next_z_obstacle);
+    bool has_obstacle_down = get_next_z_obstacle(world, target_grid_pos.x, target_grid_pos.y, target_z, &next_z_obstacle);
     if (has_obstacle_down) {
         float highest_valid_z = next_z_obstacle - player->height;
-        if (newZ > highest_valid_z) {
+        if (target_z > highest_valid_z) {
             // Player z movement is obstructed
-            float z_candidate;
-            float velocity_candidate;
             if (player->velocity_z >= 0) {
-                z_candidate = highest_valid_z;
-                velocity_candidate = 0.0f;
+                target_z = highest_valid_z;
+                player->velocity_z = 0.0f;
             } else {
-                z_candidate = next_z_obstacle + 0.01f;
-                velocity_candidate = 0.01f;
+                target_z = next_z_obstacle + 0.01f;
+                player->velocity_z = 0.01f;
             }
-
-            ivec3 newpos = get_grid_pos3(newX, newY, z_candidate);
-            Cell* cell_candidate = get_world_cell(world, newpos);
-            if (cell_candidate != NULL && cell_candidate->type != CELL_SOLID) {
-                player->position.z = z_candidate;
-                player->velocity_z = velocity_candidate;
-            }
-            
-        } else {
-            player->position.z = newZ;
         }
-    } else {
-        player->position.z = newZ;
     }
 
-    debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d)\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, grid_x, grid_y, newX, newY, (int)floor(newZ / CELL_Z_SCALE));
+    debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d)\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
 
-    // Update x and y axes
-    player->position.x = newX;
-    player->position.y = newY;
+    // Update player position if the target cell is not solid
+    ivec3 newpos = get_grid_pos3(target_x, target_y, target_z);
+    Cell* cell_candidate = get_world_cell(world, newpos);
+    if (cell_candidate == NULL || cell_candidate->type != CELL_SOLID) {
+        player->position.x = target_x;
+        player->position.y = target_y;
+        player->position.z = target_z;
+    }
 }
+
 
 void process_mouse() {
     int mouseX, mouseY;
