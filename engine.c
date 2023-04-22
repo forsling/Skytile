@@ -238,8 +238,6 @@ void update_player_position(Player *player, World *world,
         }
     }
 
-    debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d)\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
-
     // Update player position if the target cell is not solid
     ivec3 newpos = get_grid_pos3(target_x, target_y, target_z);
     Cell* cell_candidate = get_world_cell(world, newpos);
@@ -247,6 +245,14 @@ void update_player_position(Player *player, World *world,
         player->position.x = target_x;
         player->position.y = target_y;
         player->position.z = target_z;
+        debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) Accepted\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
+    } else {
+        debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) Rejected\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
+        ivec3 old_grid_pos = get_grid_pos3(player->position.x, player->position.y, player->position.z);
+        Cell* cell_candidate = get_world_cell(world, old_grid_pos);
+        if (cell_candidate != NULL && cell_candidate->type == CELL_SOLID) {
+            player->position.z -= CELL_Z_SCALE;
+        }
     }
 }
 
