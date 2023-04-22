@@ -10,14 +10,16 @@
 #include <GL/glu.h>
 #include "engine.h"
 #include "world.h"
+#include <assert.h>
 
 const bool DEBUG_LOG = true;
+
+#define MAX_CELLS 16
 
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 const int CELL_XY_SCALE  = 2;
 const int CELL_Z_SCALE = 4;
-const float COLLISION_BUFFER = 0.3f * CELL_XY_SCALE;
 const float GRAVITY = 15.0f;
 
 SDL_Window *window = NULL;
@@ -85,15 +87,16 @@ bool init_engine() {
     Level first_level = world.levels[0];
 
     // Initialize player object
-    player.position.x = first_level.width / 2;
-    player.position.y = first_level.height / 2;
+    player.position.x = 9.5f;
+    player.position.y = 8.1f;
     player.height = CELL_Z_SCALE / 2;
-    player.position.z = -1 -player.height;
+    player.position.z = 4 -player.height;
     player.velocity_z = 0.0f;
     player.pitch = 0.0f;
     player.yaw = 0.0f;
     player.speed = 10.0f;
     player.jump_velocity = -8.0f;
+    player.size = 0.3f * CELL_XY_SCALE;
 
     // Initialize OpenGL
     glClearColor(0.17f, 0.2f, 0.26f, 1.0f);
@@ -216,8 +219,10 @@ void update_player_position(Player *player, World *world,
     float newX = player->position.x + dx * player->speed * deltaTime;
     float newY = player->position.y + dy * player->speed * deltaTime;
     float newZ = player->position.z + (player->velocity_z * deltaTime);
+    
     int grid_x = (int)(newX / CELL_XY_SCALE);
     int grid_y = (int)(newY / CELL_XY_SCALE);
+    debuglog(4, "(%f, %f, %f) -> (%f, %f, %f) target cell (%d, %d) \n", player->position.x, player->position.y, player->position.z, newX, newY, newZ, grid_x, grid_y);
 
     // z-axis handling
     float next_z_obstacle;
@@ -240,6 +245,11 @@ void update_player_position(Player *player, World *world,
         player->position.z = newZ;
     }
 
+    //Nothing more to do if player is standing still.
+    if (player->position.x == newX && player->position.y == newY) {
+        return;
+    }
+
     // Just move player if they are above or below the world
     int z_level = (int)floor(player->position.z / CELL_Z_SCALE);
     bool is_out_of_z_bounds = (z_level < 0 || z_level >= world->num_levels);
@@ -259,16 +269,118 @@ void update_player_position(Player *player, World *world,
         return;
     }
 
-    // Get target cell info
-    Cell *target_cell = get_cell(level, grid_x, grid_y);
-    CellType target_cell_type = target_cell->type;
-    bool target_is_solid = target_cell_type == CELL_SOLID;
+    // Calculate the destination position
+    Vec2 source = {player->position.x, player->position.y};
+    Vec2 destination = {newX, newY};
 
-    // Handle XY movement
-    if (target_cell_type != CELL_SOLID) {
-        player->position.x = newX;
-        player->position.y = newY;
+    // Use get_furthest_legal_position to find the furthest position the player can move
+    Vec2 furthest_legal_position = get_furthest_legal_position(level, source, destination, player->size);
+
+    debuglog(4, "Source: (%f, %f), Destination: (%f, %f), Furthest Legal Position: (%f, %f)\n",
+            source.x, source.y, destination.x, destination.y,
+            furthest_legal_position.x, furthest_legal_position.y);
+
+    // Update the player's position based on the furthest legal position
+    player->position.x = furthest_legal_position.x;
+    player->position.y = furthest_legal_position.y;
+}
+
+Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, float collision_buffer) {
+    int num_cells;
+    CellInfo *cell_infos = get_cells_for_vector(level, source, destination, &num_cells);
+    debuglog(1, "Number of cells to check: %d\n", num_cells);
+
+    Vec2 movement_vector = Vec2_subtract(destination, source);
+    float movement_length = Vec2_length(movement_vector);
+    Vec2 movement_unit_vector = Vec2_normalize(movement_vector);
+
+    for (float distance = movement_length; distance >= 0.0f; distance -= collision_buffer) {
+        Vec2 candidate_position = Vec2_add(source, Vec2_multiply_scalar(movement_unit_vector, distance));
+        bool is_valid = true;
+
+        for (int i = 0; i < num_cells; i++) {
+            CellInfo cell_info = cell_infos[i];
+            Cell *cell = cell_info.cell;
+            Vec2 cell_position = cell_info.position;
+
+            if (cell != NULL && cell->type == CELL_SOLID) {
+                debuglog(1, "Solid cell found at (%f, %f)\n", cell_info.position.x, cell_info.position.y);
+                //float distance_to_cell = Vec2_length(Vec2_subtract(candidate_position, cell_position));
+                float distance_to_cell = point_to_aabb_distance(destination.x, destination.y, cell_position.x, cell_position.y, cell_position.x + CELL_XY_SCALE, cell_position.y + CELL_XY_SCALE);
+                debuglog(1, "Distance to solid cell: %f \n", distance_to_cell);
+                if (distance_to_cell <= collision_buffer) {
+                    is_valid = false;
+                    break;
+                }
+            }
+        }
+
+        if (is_valid) {
+            return candidate_position;
+        }
     }
+
+    return source;
+}
+
+float point_to_aabb_distance(float px, float py, float x1, float y1, float x2, float y2) {
+    float clamped_x = fmaxf(x1, fminf(px, x2));
+    float clamped_y = fmaxf(y1, fminf(py, y2));
+
+    float dx = px - clamped_x;
+    float dy = py - clamped_y;
+
+    return sqrtf(dx * dx + dy * dy);
+}
+
+CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int *num_cells) {
+    assert(num_cells != NULL);
+
+    // Allocate memory for the cell information array
+    static CellInfo cell_infos[MAX_CELLS];
+    *num_cells = 0;
+
+    // Convert source and destination to cell coordinates
+    int x0 = (int)(source.x / CELL_XY_SCALE);
+    int y0 = (int)(source.y / CELL_XY_SCALE);
+    int x1 = (int)(destination.x / CELL_XY_SCALE);
+    int y1 = (int)(destination.y / CELL_XY_SCALE);
+
+    // Bresenham's line algorithm
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int err = (dx > dy ? dx : -dy) / 2;
+    int err2;
+
+    while (1) {
+        // Check if the cell is within the level bounds
+        if (x0 >= 0 && x0 < level->width && y0 >= 0 && y0 < level->height) {
+            Cell *cell = get_cell(level, x0, y0);
+            if (cell != NULL) {
+                // Add cell information to the array
+                cell_infos[*num_cells].cell = cell;
+                cell_infos[*num_cells].position = (Vec2){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE};
+                (*num_cells)++;
+            }
+        }
+
+        if (x0 == x1 && y0 == y1) {
+            break;
+        }
+        err2 = err;
+        if (err2 > -dx) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (err2 < dy) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+
+    return cell_infos;
 }
 
 bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
@@ -494,4 +606,35 @@ Cell *get_cell(Level *level, int x, int y) {
         return NULL;
     }
     return &level->cells[y][x];
+}
+
+// Subtract two Vec2 vectors
+Vec2 Vec2_subtract(Vec2 a, Vec2 b) {
+    Vec2 result = {a.x - b.x, a.y - b.y};
+    return result;
+}
+
+// Calculate the length of a Vec2 vector
+float Vec2_length(Vec2 v) {
+    return sqrtf(v.x * v.x + v.y * v.y);
+}
+
+// Normalize a Vec2 vector
+Vec2 Vec2_normalize(Vec2 v) {
+    float length = Vec2_length(v);
+    if (length == 0.0f) {
+        return (Vec2){0.0f, 0.0f};
+    }
+    return (Vec2){v.x / length, v.y / length};
+}
+
+// Multiply a Vec2 vector by a scalar
+Vec2 Vec2_multiply_scalar(Vec2 v, float scalar) {
+    Vec2 result = {v.x * scalar, v.y * scalar};
+    return result;
+}
+
+Vec2 Vec2_add(Vec2 a, Vec2 b) {
+    Vec2 result = {a.x + b.x, a.y + b.y};
+    return result;
 }
