@@ -36,7 +36,7 @@ Cell* get_cell(Level* level, int x, int y);
 Uint32 get_pixel32(SDL_Surface *surface, int x, int y);
 GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height);
 SDL_Surface* load_surface(const char *filename);
-GLuint loadTexture(const char *filename);
+GLuint load_texture_direct(const char *filename);
 Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num_definitions);
 Cell* read_cell_definitions(const char *filename, int *num_definitions);
 int parse_cell_definition(const char *line, Cell *def);

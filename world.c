@@ -83,6 +83,12 @@ void free_world(World* world) {
     free(world->levels);
     world->levels = NULL;
     world->num_levels = 0;
+
+    free(cell_definitions);
+    cell_definitions = NULL;
+
+    SDL_FreeSurface(base_bg_texture);
+    base_bg_texture = NULL;
 }
 
 void parse_level_from_surface(SDL_Surface* surface, Level* level) {
@@ -274,7 +280,7 @@ SDL_Surface* load_surface(const char *filename) {
     return image;
 }
 
-GLuint loadTexture(const char *filename) {
+GLuint load_texture_direct(const char *filename) {
     SDL_Surface *image = IMG_Load(filename);
     if (!image) {
         printf("Error: %s\n", IMG_GetError());

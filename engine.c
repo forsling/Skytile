@@ -429,8 +429,8 @@ void render_world(World *world) {
 
     bool render_reference_block = true;
     if (render_reference_block) {
-        GLuint tex_wall = loadTexture("assets/grey_brick1.bmp");
-        GLuint dirt = loadTexture("assets/earth1.bmp");
+        GLuint tex_wall = load_texture_direct("assets/grey_brick1.bmp");
+        GLuint dirt = load_texture_direct("assets/earth1.bmp");
         render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, tex_wall);
         render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, dirt);
         render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, tex_wall);
