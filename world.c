@@ -8,6 +8,7 @@
 #include "vector.h"
 #include <assert.h>
 #include "utils.h"
+#include <math.h>
 
 Cell *cell_definitions;
 int num_definitions;
@@ -326,11 +327,16 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
         }
         Cell *cell = get_cell(level, cell_x, cell_y);
 
+        // if (cell->type == CELL_SOLID) {
+        //     *out_obstacle_z = (float)i * CELL_Z_SCALE;
+        //     return true;
+        // }
+
         //Check ceiling if they are below player
         if (z_pos < (float)i * CELL_Z_SCALE) {
             if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
                 *out_obstacle_z = (float)i * CELL_Z_SCALE;
-                //debuglog(8, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
+                //debuglog(1, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
                 return true;
             }
         }
@@ -338,7 +344,7 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
         //Check floors
         if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
             *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
-            //debuglog(8, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
+            //debuglog(1, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
             return true;
         }
     }
@@ -399,7 +405,6 @@ CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int 
 Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, float collision_buffer) {
     int num_cells;
     CellInfo *cell_infos = get_cells_for_vector(level, source, destination, &num_cells);
-    debuglog(1, "Number of cells to check: %d\n", num_cells);
 
     Vec2 movement_vector = Vec2_subtract(destination, source);
     float movement_length = Vec2_length(movement_vector);
@@ -415,10 +420,9 @@ Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, fl
             Vec2 cell_position = cell_info.position;
 
             if (cell != NULL && cell->type == CELL_SOLID) {
-                debuglog(1, "Solid cell found at (%f, %f)\n", cell_info.position.x, cell_info.position.y);
-                //float distance_to_cell = Vec2_length(Vec2_subtract(candidate_position, cell_position));
+                //debuglog(1, "Solid cell found at (%f, %f)\n", cell_info.position.x, cell_info.position.y);
                 float distance_to_cell = point_to_aabb_distance(destination.x, destination.y, cell_position.x, cell_position.y, cell_position.x + CELL_XY_SCALE, cell_position.y + CELL_XY_SCALE);
-                debuglog(1, "Distance to solid cell: %f \n", distance_to_cell);
+                //debuglog(1, "Distance to solid cell: %f \n", distance_to_cell);
                 if (distance_to_cell <= collision_buffer) {
                     is_valid = false;
                     break;
@@ -432,6 +436,23 @@ Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, fl
     }
 
     return source;
+}
+
+ivec2 get_grid_pos2(float x, float y) {
+    ivec2 gridpos = {
+        .x = (int)(x / CELL_XY_SCALE),
+        .y = (int)(y / CELL_XY_SCALE)
+    };
+    return gridpos;
+}
+
+ivec3 get_grid_pos3(float x, float y, float z) {
+    ivec3 levelpos = {
+        .x = (int)(x / CELL_XY_SCALE),
+        .y = (int)(y / CELL_XY_SCALE),
+        .z = (int)floor(z / CELL_Z_SCALE)
+    };
+    return levelpos;
 }
 
 bool is_out_of_xy_bounds(Level *level, int x, int y) {
@@ -449,3 +470,14 @@ Cell *get_cell(Level *level, int x, int y) {
     return &level->cells[y][x];
 }
 
+Cell *get_world_cell(World *world, ivec3 grid_position) {
+    if (grid_position.z < 0 || grid_position.z >= world->num_levels) {
+        return NULL;
+    }
+    Level *level = &world->levels[grid_position.z];
+    if (grid_position.y > level->width || grid_position.x > level->height) {
+        return NULL;
+    }
+    Cell *cell = &level->cells[grid_position.y][grid_position.x];
+    return cell;
+}

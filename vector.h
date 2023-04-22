@@ -11,6 +11,14 @@ typedef struct {
     float x, y;
 } Vec2;
 
+typedef struct {
+    int x, y, z;
+} ivec3;
+
+typedef struct {
+    int x, y;
+} ivec2;
+
 Vec2 Vec2_subtract(Vec2 a, Vec2 b);
 float Vec2_length(Vec2 v);
 Vec2 Vec2_normalize(Vec2 v);

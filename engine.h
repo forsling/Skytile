@@ -35,7 +35,7 @@ void free_engine_assets();
 
 void process_input(World *world, float deltaTime);
 void process_mouse();
-void update_player_position(Player *player, World *world, float dx, float dy, float deltaTime);
+void update_player_position(Player *player , World *world, float dx, float dy, float deltaTime);
 
 void render_face(float x, float y, float z, float sizeX, float sizeY, GLuint texture, Direction direction);
 void render_world(World* world);

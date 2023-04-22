@@ -27,6 +27,7 @@ SDL_GLContext gl_context = NULL;
 World world;
 Player player;
 bool free_mode = false;
+bool hit_z = false;
 
 static bool quit = false;
 
@@ -72,10 +73,10 @@ bool init_engine() {
     Level first_level = world.levels[0];
 
     // Initialize player object
-    player.position.x = 9.5f;
-    player.position.y = 8.1f;
+    player.position.x = 2.5f;
+    player.position.y = 3.9f;
     player.height = CELL_Z_SCALE / 2;
-    player.position.z = 4 -player.height;
+    player.position.z = 8 -player.height;
     player.velocity_z = 0.0f;
     player.pitch = 0.0f;
     player.yaw = 0.0f;
@@ -204,25 +205,48 @@ void update_player_position(Player *player, World *world,
     float newX = player->position.x + dx * player->speed * deltaTime;
     float newY = player->position.y + dy * player->speed * deltaTime;
     float newZ = player->position.z + (player->velocity_z * deltaTime);
-    
+
+    int z_level = (int)floor(player->position.z / CELL_Z_SCALE);
+    Level *level = &world->levels[z_level];
+
+    // Calculate the destination position
+    Vec2 source = {player->position.x, player->position.y};
+    Vec2 destination = {newX, newY};
+
+    // Update the player's position based on the furthest legal position
+    if (z_level >= 0) {
+        Vec2 furthest_legal_position = get_furthest_legal_position(level, source, destination, player->size);
+        newX = furthest_legal_position.x;
+        newY = furthest_legal_position.y;
+    }
+
     int grid_x = (int)(newX / CELL_XY_SCALE);
     int grid_y = (int)(newY / CELL_XY_SCALE);
-    debuglog(4, "(%f, %f, %f) -> (%f, %f, %f) target cell (%d, %d) \n", player->position.x, player->position.y, player->position.z, newX, newY, newZ, grid_x, grid_y);
 
     // z-axis handling
     float next_z_obstacle;
-    bool has_obstacle_down = get_next_z_obstacle(world, grid_x, grid_y, player->position.z, &next_z_obstacle);
+    bool has_obstacle_down = get_next_z_obstacle(world, grid_x, grid_y, newZ, &next_z_obstacle);
     if (has_obstacle_down) {
         float highest_valid_z = next_z_obstacle - player->height;
         if (newZ > highest_valid_z) {
             // Player z movement is obstructed
+            float z_candidate;
+            float velocity_candidate;
             if (player->velocity_z >= 0) {
-                player->position.z = highest_valid_z;
-                player->velocity_z = 0.0f;
+                z_candidate = highest_valid_z;
+                velocity_candidate = 0.0f;
             } else {
-                player->position.z = next_z_obstacle + 0.01f;
-                player->velocity_z = 0.01f;
+                z_candidate = next_z_obstacle + 0.01f;
+                velocity_candidate = 0.01f;
             }
+
+            ivec3 newpos = get_grid_pos3(newX, newY, z_candidate);
+            Cell* cell_candidate = get_world_cell(world, newpos);
+            if (cell_candidate != NULL && cell_candidate->type != CELL_SOLID) {
+                player->position.z = z_candidate;
+                player->velocity_z = velocity_candidate;
+            }
+            
         } else {
             player->position.z = newZ;
         }
@@ -230,44 +254,11 @@ void update_player_position(Player *player, World *world,
         player->position.z = newZ;
     }
 
-    //Nothing more to do if player is standing still.
-    if (player->position.x == newX && player->position.y == newY) {
-        return;
-    }
+    debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d)\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, grid_x, grid_y, newX, newY, (int)floor(newZ / CELL_Z_SCALE));
 
-    // Just move player if they are above or below the world
-    int z_level = (int)floor(player->position.z / CELL_Z_SCALE);
-    bool is_out_of_z_bounds = (z_level < 0 || z_level >= world->num_levels);
-    if (is_out_of_z_bounds) {
-        player->position.x = newX;
-        player->position.y = newY;
-        return;
-    }
-
-    Level *level = &world->levels[z_level];
-
-    // Move player if they are outside of the level (XY)
-    if (is_out_of_xy_bounds(level, grid_x, grid_y)) {
-        player->position.x = newX;
-        player->position.y = newY;
-        player->position.z = newZ;  
-        return;
-    }
-
-    // Calculate the destination position
-    Vec2 source = {player->position.x, player->position.y};
-    Vec2 destination = {newX, newY};
-
-    // Use get_furthest_legal_position to find the furthest position the player can move
-    Vec2 furthest_legal_position = get_furthest_legal_position(level, source, destination, player->size);
-
-    debuglog(4, "Source: (%f, %f), Destination: (%f, %f), Furthest Legal Position: (%f, %f)\n",
-            source.x, source.y, destination.x, destination.y,
-            furthest_legal_position.x, furthest_legal_position.y);
-
-    // Update the player's position based on the furthest legal position
-    player->position.x = furthest_legal_position.x;
-    player->position.y = furthest_legal_position.y;
+    // Update x and y axes
+    player->position.x = newX;
+    player->position.y = newY;
 }
 
 void process_mouse() {
@@ -334,7 +325,6 @@ void render_face(float x, float y, float z, float width, float height, Direction
     glBegin(GL_QUADS);
 
     float ceiling_offset = 0.01f;
-    //printf("Rendering face with dir %d at %f, %f, %f with width %f and height %f\n", direction, x, y, z, width, height);
 
     switch (direction) {
         case DIR_EAST:
