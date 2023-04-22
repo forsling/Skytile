@@ -4,13 +4,13 @@
 #include <time.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_image.h>
 #include <GL/glu.h>
 #include "engine.h"
 #include "world.h"
-#include <assert.h>
+#include "vector.h"
+#include "utils.h"
 
 const bool DEBUG_LOG = true;
 
@@ -18,8 +18,6 @@ const bool DEBUG_LOG = true;
 
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
-const int CELL_XY_SCALE  = 2;
-const int CELL_Z_SCALE = 4;
 const float GRAVITY = 15.0f;
 
 SDL_Window *window = NULL;
@@ -31,19 +29,6 @@ Player player;
 bool free_mode = false;
 
 static bool quit = false;
-
-void debuglog(int one_in_n_chance, const char* format, ...)
-{
-    if (!debuglog) {
-        return;
-    }
-    if (rand() % one_in_n_chance == 0) {
-        va_list args;
-        va_start(args, format);
-        vprintf(format, args);
-        va_end(args);
-    }
-}
 
 bool init_engine() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -285,139 +270,6 @@ void update_player_position(Player *player, World *world,
     player->position.y = furthest_legal_position.y;
 }
 
-Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, float collision_buffer) {
-    int num_cells;
-    CellInfo *cell_infos = get_cells_for_vector(level, source, destination, &num_cells);
-    debuglog(1, "Number of cells to check: %d\n", num_cells);
-
-    Vec2 movement_vector = Vec2_subtract(destination, source);
-    float movement_length = Vec2_length(movement_vector);
-    Vec2 movement_unit_vector = Vec2_normalize(movement_vector);
-
-    for (float distance = movement_length; distance >= 0.0f; distance -= collision_buffer) {
-        Vec2 candidate_position = Vec2_add(source, Vec2_multiply_scalar(movement_unit_vector, distance));
-        bool is_valid = true;
-
-        for (int i = 0; i < num_cells; i++) {
-            CellInfo cell_info = cell_infos[i];
-            Cell *cell = cell_info.cell;
-            Vec2 cell_position = cell_info.position;
-
-            if (cell != NULL && cell->type == CELL_SOLID) {
-                debuglog(1, "Solid cell found at (%f, %f)\n", cell_info.position.x, cell_info.position.y);
-                //float distance_to_cell = Vec2_length(Vec2_subtract(candidate_position, cell_position));
-                float distance_to_cell = point_to_aabb_distance(destination.x, destination.y, cell_position.x, cell_position.y, cell_position.x + CELL_XY_SCALE, cell_position.y + CELL_XY_SCALE);
-                debuglog(1, "Distance to solid cell: %f \n", distance_to_cell);
-                if (distance_to_cell <= collision_buffer) {
-                    is_valid = false;
-                    break;
-                }
-            }
-        }
-
-        if (is_valid) {
-            return candidate_position;
-        }
-    }
-
-    return source;
-}
-
-float point_to_aabb_distance(float px, float py, float x1, float y1, float x2, float y2) {
-    float clamped_x = fmaxf(x1, fminf(px, x2));
-    float clamped_y = fmaxf(y1, fminf(py, y2));
-
-    float dx = px - clamped_x;
-    float dy = py - clamped_y;
-
-    return sqrtf(dx * dx + dy * dy);
-}
-
-CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int *num_cells) {
-    assert(num_cells != NULL);
-
-    // Allocate memory for the cell information array
-    static CellInfo cell_infos[MAX_CELLS];
-    *num_cells = 0;
-
-    // Convert source and destination to cell coordinates
-    int x0 = (int)(source.x / CELL_XY_SCALE);
-    int y0 = (int)(source.y / CELL_XY_SCALE);
-    int x1 = (int)(destination.x / CELL_XY_SCALE);
-    int y1 = (int)(destination.y / CELL_XY_SCALE);
-
-    // Bresenham's line algorithm
-    int dx = abs(x1 - x0);
-    int dy = abs(y1 - y0);
-    int sx = (x0 < x1) ? 1 : -1;
-    int sy = (y0 < y1) ? 1 : -1;
-    int err = (dx > dy ? dx : -dy) / 2;
-    int err2;
-
-    while (1) {
-        // Check if the cell is within the level bounds
-        if (x0 >= 0 && x0 < level->width && y0 >= 0 && y0 < level->height) {
-            Cell *cell = get_cell(level, x0, y0);
-            if (cell != NULL) {
-                // Add cell information to the array
-                cell_infos[*num_cells].cell = cell;
-                cell_infos[*num_cells].position = (Vec2){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE};
-                (*num_cells)++;
-            }
-        }
-
-        if (x0 == x1 && y0 == y1) {
-            break;
-        }
-        err2 = err;
-        if (err2 > -dx) {
-            err -= dy;
-            x0 += sx;
-        }
-        if (err2 < dy) {
-            err += dx;
-            y0 += sy;
-        }
-    }
-
-    return cell_infos;
-}
-
-bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
-    int z_level = (int)(z_pos / CELL_Z_SCALE);
-    if (z_level >= world->num_levels) {
-        return false;
-    }
-
-    int first_check_level = z_level >= 0 ? z_level : 0; 
-
-    for (int i = first_check_level; i < world->num_levels; i++) {
-        Level *level = &world->levels[i];
-        if (!is_within_xy_bounds(level, cell_x, cell_y)) {
-            continue;
-        }
-        Cell *cell = get_cell(level, cell_x, cell_y);
-
-        //Check ceiling if they are below player
-        if (z_pos < (float)i * CELL_Z_SCALE) {
-            if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
-                *out_obstacle_z = (float)i * CELL_Z_SCALE;
-                //debuglog(8, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
-                return true;
-            }
-        }
-
-        //Check floors
-        if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
-            *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
-            //debuglog(8, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
-            return true;
-        }
-    }
-
-    return false; // No obstacle found
-}
-
 void process_mouse() {
     int mouseX, mouseY;
     SDL_GetRelativeMouseState(&mouseX, &mouseY);
@@ -593,48 +445,4 @@ void render_world(World *world) {
     }
 }
 
-bool is_out_of_xy_bounds(Level *level, int x, int y) {
-    return x < 0 || x >= level->width || y < 0 || y >= level->height;
-}
 
-bool is_within_xy_bounds(Level *level, int x, int y) {
-    return x >= 0 && x < level->width && y >= 0 && y < level->height;
-}
-
-Cell *get_cell(Level *level, int x, int y) {
-    if (is_out_of_xy_bounds(level, x, y)) {
-        return NULL;
-    }
-    return &level->cells[y][x];
-}
-
-// Subtract two Vec2 vectors
-Vec2 Vec2_subtract(Vec2 a, Vec2 b) {
-    Vec2 result = {a.x - b.x, a.y - b.y};
-    return result;
-}
-
-// Calculate the length of a Vec2 vector
-float Vec2_length(Vec2 v) {
-    return sqrtf(v.x * v.x + v.y * v.y);
-}
-
-// Normalize a Vec2 vector
-Vec2 Vec2_normalize(Vec2 v) {
-    float length = Vec2_length(v);
-    if (length == 0.0f) {
-        return (Vec2){0.0f, 0.0f};
-    }
-    return (Vec2){v.x / length, v.y / length};
-}
-
-// Multiply a Vec2 vector by a scalar
-Vec2 Vec2_multiply_scalar(Vec2 v, float scalar) {
-    Vec2 result = {v.x * scalar, v.y * scalar};
-    return result;
-}
-
-Vec2 Vec2_add(Vec2 a, Vec2 b) {
-    Vec2 result = {a.x + b.x, a.y + b.y};
-    return result;
-}

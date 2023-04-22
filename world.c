@@ -5,11 +5,17 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <dirent.h>
+#include "vector.h"
+#include <assert.h>
+#include "utils.h"
 
 Cell *cell_definitions;
 int num_definitions;
 SDL_Surface* base_bg_texture;
 Cell default_cell;
+
+const int CELL_XY_SCALE = 2;
+const int CELL_Z_SCALE = 4;
 
 bool load_world(World* world) {
     DIR* dir;
@@ -304,3 +310,142 @@ GLuint load_texture_direct(const char *filename) {
 
     return texture;
 }
+
+bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
+    int z_level = (int)(z_pos / CELL_Z_SCALE);
+    if (z_level >= world->num_levels) {
+        return false;
+    }
+
+    int first_check_level = z_level >= 0 ? z_level : 0; 
+
+    for (int i = first_check_level; i < world->num_levels; i++) {
+        Level *level = &world->levels[i];
+        if (!is_within_xy_bounds(level, cell_x, cell_y)) {
+            continue;
+        }
+        Cell *cell = get_cell(level, cell_x, cell_y);
+
+        //Check ceiling if they are below player
+        if (z_pos < (float)i * CELL_Z_SCALE) {
+            if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
+                *out_obstacle_z = (float)i * CELL_Z_SCALE;
+                //debuglog(8, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
+                return true;
+            }
+        }
+
+        //Check floors
+        if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
+            *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
+            //debuglog(8, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
+            return true;
+        }
+    }
+
+    return false; // No obstacle found
+}
+
+CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int *num_cells) {
+    assert(num_cells != NULL);
+
+    // Allocate memory for the cell information array
+    static CellInfo cell_infos[MAX_CELLS];
+    *num_cells = 0;
+
+    // Convert source and destination to cell coordinates
+    int x0 = (int)(source.x / CELL_XY_SCALE);
+    int y0 = (int)(source.y / CELL_XY_SCALE);
+    int x1 = (int)(destination.x / CELL_XY_SCALE);
+    int y1 = (int)(destination.y / CELL_XY_SCALE);
+
+    // Bresenham's line algorithm
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int err = (dx > dy ? dx : -dy) / 2;
+    int err2;
+
+    while (1) {
+        // Check if the cell is within the level bounds
+        if (x0 >= 0 && x0 < level->width && y0 >= 0 && y0 < level->height) {
+            Cell *cell = get_cell(level, x0, y0);
+            if (cell != NULL) {
+                // Add cell information to the array
+                cell_infos[*num_cells].cell = cell;
+                cell_infos[*num_cells].position = (Vec2){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE};
+                (*num_cells)++;
+            }
+        }
+
+        if (x0 == x1 && y0 == y1) {
+            break;
+        }
+        err2 = err;
+        if (err2 > -dx) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (err2 < dy) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+
+    return cell_infos;
+}
+
+Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, float collision_buffer) {
+    int num_cells;
+    CellInfo *cell_infos = get_cells_for_vector(level, source, destination, &num_cells);
+    debuglog(1, "Number of cells to check: %d\n", num_cells);
+
+    Vec2 movement_vector = Vec2_subtract(destination, source);
+    float movement_length = Vec2_length(movement_vector);
+    Vec2 movement_unit_vector = Vec2_normalize(movement_vector);
+
+    for (float distance = movement_length; distance >= 0.0f; distance -= collision_buffer) {
+        Vec2 candidate_position = Vec2_add(source, Vec2_multiply_scalar(movement_unit_vector, distance));
+        bool is_valid = true;
+
+        for (int i = 0; i < num_cells; i++) {
+            CellInfo cell_info = cell_infos[i];
+            Cell *cell = cell_info.cell;
+            Vec2 cell_position = cell_info.position;
+
+            if (cell != NULL && cell->type == CELL_SOLID) {
+                debuglog(1, "Solid cell found at (%f, %f)\n", cell_info.position.x, cell_info.position.y);
+                //float distance_to_cell = Vec2_length(Vec2_subtract(candidate_position, cell_position));
+                float distance_to_cell = point_to_aabb_distance(destination.x, destination.y, cell_position.x, cell_position.y, cell_position.x + CELL_XY_SCALE, cell_position.y + CELL_XY_SCALE);
+                debuglog(1, "Distance to solid cell: %f \n", distance_to_cell);
+                if (distance_to_cell <= collision_buffer) {
+                    is_valid = false;
+                    break;
+                }
+            }
+        }
+
+        if (is_valid) {
+            return candidate_position;
+        }
+    }
+
+    return source;
+}
+
+bool is_out_of_xy_bounds(Level *level, int x, int y) {
+    return x < 0 || x >= level->width || y < 0 || y >= level->height;
+}
+
+bool is_within_xy_bounds(Level *level, int x, int y) {
+    return x >= 0 && x < level->width && y >= 0 && y < level->height;
+}
+
+Cell *get_cell(Level *level, int x, int y) {
+    if (is_out_of_xy_bounds(level, x, y)) {
+        return NULL;
+    }
+    return &level->cells[y][x];
+}
+

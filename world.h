@@ -4,6 +4,11 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#include "vector.h"
+
+#define MAX_CELLS 16
+extern const int CELL_XY_SCALE;
+extern const int CELL_Z_SCALE;
 
 typedef enum {
     CELL_OPEN,
@@ -29,6 +34,11 @@ typedef struct {
     Level* levels;
 } World;
 
+typedef struct {
+    Cell* cell;
+    Vec2 position;
+} CellInfo;
+
 bool load_world(World* world);
 void free_world(World* world);
 void parse_level_from_surface(SDL_Surface* surface, Level* level);
@@ -40,5 +50,11 @@ GLuint load_texture_direct(const char *filename);
 Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num_definitions);
 Cell* read_cell_definitions(const char *filename, int *num_definitions);
 int parse_cell_definition(const char *line, Cell *def);
+
+bool is_out_of_xy_bounds(Level *level, int x, int y);
+bool is_within_xy_bounds(Level *level, int x, int y);
+bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z);
+Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, float collision_buffer);
+CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int *num_cells);
 
 #endif // WORLD_H
