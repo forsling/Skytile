@@ -1,4 +1,4 @@
-#Color  Type    Ceil X,Y,W,H/0  Floor X,Y,W,H/0 Wall X,Y,W,H/0  Name
+#Color  Type    Ceil X,Y,W,H    Floor X,Y,W,H   Wall X,Y,W,H    Name
 404040  SOLID   256,160,32,32   2016,32,32,32   1280,192,32,31  "Brick wall"
 808080  OPEN    256,160,32,32   128,192,32,32   0               "Closed floor"
 909090  OPEN    0               128,192,32,32   0               "Open floor"

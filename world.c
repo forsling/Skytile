@@ -287,30 +287,6 @@ SDL_Surface* load_surface(const char *filename) {
     return image;
 }
 
-GLuint load_texture_direct(const char *filename) {
-    SDL_Surface *image = IMG_Load(filename);
-    if (!image) {
-        printf("Error: %s\n", IMG_GetError());
-        return 0;
-    }
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    GLenum format = (image->format->BytesPerPixel == 4) ? GL_RGBA : GL_RGB;
-    glTexImage2D(GL_TEXTURE_2D, 0, format, image->w, image->h, 0, format, GL_UNSIGNED_BYTE, image->pixels);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    SDL_FreeSurface(image);
-
-    return texture;
-}
 
 bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
     int z_level = (int)(z_pos / CELL_Z_SCALE);

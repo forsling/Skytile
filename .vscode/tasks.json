@@ -10,6 +10,7 @@
         "${workspaceFolder}\\main.c",
         "${workspaceFolder}\\engine.c",
         "${workspaceFolder}\\world.c",
+        "${workspaceFolder}\\render.c",
         "${workspaceFolder}\\utils.c",
         "${workspaceFolder}\\vector.c",
         "-o",
