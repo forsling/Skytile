@@ -113,6 +113,9 @@ void initialize_default_settings() {
     set_setting("current_level", SETTING_TYPE_INT, "1");
     set_setting("gravity", SETTING_TYPE_FLOAT, "15.0f");
     set_setting("free_mode", SETTING_TYPE_BOOL, "false");
+    set_setting("player_pos_x", SETTING_TYPE_FLOAT, "5.0f");
+    set_setting("player_pos_y", SETTING_TYPE_FLOAT, "5.0f");
+    set_setting("player_pos_z", SETTING_TYPE_FLOAT, "-2.0f");
 }
 
 void set_setting(const char *key, SettingType type, const char *value_str) {

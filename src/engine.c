@@ -42,8 +42,10 @@ bool init_engine() {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
+    int SCREEN_WIDTH = get_setting_int("screen_width");
+    int SCREEN_HEIGHT = get_setting_int("screen_height");
     window = SDL_CreateWindow("Game Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                              SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+                            SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
     if (window == NULL) {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return false;
@@ -74,19 +76,14 @@ bool init_engine() {
     srand(time(NULL));
 
     // Initialize player object
-    player = (struct Player) {
-        .position.x = 11.0f,
-        .position.y = 9.0f,
-        .position.z = 0.0f,
-        .height = CELL_Z_SCALE / 2,
-        .velocity_z = 0.0f,
-        .pitch = 0.0f,
-        .yaw = 0.0f,
-        .speed = 10.0f,
-        .jump_velocity = -8.0f,
-        .size = 0.3f * CELL_XY_SCALE
-    };
-    player.position.z = 0.0f - player.height;
+    player = (struct Player) {0};
+    player.position.x = get_setting_float("player_pos_x");
+    player.position.y = get_setting_float("player_pos_y");
+    player.position.z = get_setting_float("player_pos_z");
+    player.height = CELL_Z_SCALE / 2;
+    player.speed = 10.0f;
+    player.jump_velocity = -8.0f;
+    player.size = 0.3f * CELL_XY_SCALE;
 
     init_opengl(player);
 

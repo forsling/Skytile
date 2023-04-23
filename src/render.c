@@ -6,9 +6,7 @@
 #include <SDL2/SDL_image.h>
 #include "render.h"
 #include "world.h"
-
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+#include "settings.h"
 
 void init_opengl() {
     // Initialize OpenGL
@@ -18,10 +16,10 @@ void init_opengl() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    glViewport(0, 0, get_setting_int("screen_width"), get_setting_int("screen_height"));
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f, (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 500.0f);
+    gluPerspective(45.0f, (float)get_setting_int("screen_width") / (float)get_setting_int("screen_height"), 0.1f, 500.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -78,7 +76,7 @@ void render_face(float x, float y, float z, float width, float height, Direction
 void render_world(World *world, Player *player) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90.0, (double)SCREEN_WIDTH / (double)SCREEN_HEIGHT, 0.01, 500.0);
+    gluPerspective(90.0, (double)get_setting_int("screen_width") / (double)get_setting_int("screen_height"), 0.01, 500.0);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();

@@ -6,9 +6,6 @@
 #include "world.h"
 #include "engine.h"
 
-extern const int SCREEN_WIDTH;
-extern const int SCREEN_HEIGHT;
-
 typedef enum {
     DIR_EAST,
     DIR_WEST,
