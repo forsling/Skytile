@@ -451,7 +451,7 @@ bool get_world_cell(World *world, ivec3 grid_position, Cell** out_cell) {
         return false;
     }
     Level *level = &world->levels[grid_position.z];
-    if (grid_position.y >= level->width || grid_position.x >= level->height) {
+    if (grid_position.y < 0 || grid_position.y >= level->width || grid_position.x < 0 || grid_position.x >= level->height) {
         return false;
     }
     *out_cell = &level->cells[grid_position.y][grid_position.x];
