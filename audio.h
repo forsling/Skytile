@@ -6,6 +6,9 @@
 // Initialize the audio subsystem
 bool audio_init();
 
+// Set global volume
+void audio_set_volume(float volume);
+
 // Load music from a file
 bool audio_load_music(const char* filename);
 

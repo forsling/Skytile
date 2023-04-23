@@ -6,6 +6,7 @@
 #define NUM_SOUNDS 10
 static Mix_Music* g_music = NULL;
 static Mix_Chunk* g_sounds[NUM_SOUNDS] = {NULL};
+static float g_volume = 1.0f;
 
 bool audio_init() {
     // Initialize SDL audio subsystem
@@ -21,6 +22,17 @@ bool audio_init() {
     }
 
     return true;
+}
+
+void audio_set_volume(float volume) {
+    g_volume = volume;
+
+    // Set the volume of all sound effects
+    for (int i = 0; i < NUM_SOUNDS; i++) {
+        if (g_sounds[i] != NULL) {
+            Mix_VolumeChunk(g_sounds[i], (int)(g_volume * MIX_MAX_VOLUME));
+        }
+    }
 }
 
 bool audio_load_music(const char* filename) {
@@ -77,7 +89,7 @@ int audio_load_sound(const char* filename) {
 void audio_play_sound(int sound_id, float volume) {
     if (sound_id >= 0 && sound_id < NUM_SOUNDS && g_sounds[sound_id] != NULL) {
         // Set the volume of the sound effect
-        Mix_VolumeChunk(g_sounds[sound_id], (int)(volume * MIX_MAX_VOLUME));
+        Mix_VolumeChunk(g_sounds[sound_id], (int)(volume * g_volume * MIX_MAX_VOLUME));
 
         // Play the specified sound effect
         Mix_PlayChannel(-1, g_sounds[sound_id], 0);
