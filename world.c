@@ -20,29 +20,30 @@ Cell default_cell;
 const int CELL_XY_SCALE = 2;
 const int CELL_Z_SCALE = 4;
 
-bool load_world(World* world) {
+bool load_world(World* world, int number) {
     DIR* dir;
     struct dirent* entry;
-    int level_count = 0;
-
-    dir = opendir("levels");
+    int layer_count = 0;
+    char leveldir[20];
+    snprintf(leveldir, sizeof(leveldir), "levels/level%d", number);
+    dir = opendir(leveldir);
     if (dir == NULL) {
-        printf("Failed to open levels directory.\n");
+        printf("Failed to open layers directory.\n");
         return false;
     }
 
-    // Count the number of level files
+    // Count the number of layer files
     while ((entry = readdir(dir)) != NULL) {
-        if (strstr(entry->d_name, "level-") != NULL && strstr(entry->d_name, ".bmp") != NULL) {
-            level_count++;
+        if (strstr(entry->d_name, "layer-") != NULL && strstr(entry->d_name, ".bmp") != NULL) {
+            layer_count++;
         }
     }
 
     base_bg_texture = load_surface("assets/bg.png");
 
-    // Allocate memory for levels
-    world->num_levels = level_count;
-    world->levels = malloc(level_count * sizeof(Level));
+    // Allocate memory for layers
+    world->num_layers = layer_count;
+    world->layers = malloc(layer_count * sizeof(Layer));
 
     // Reset directory position
     rewinddir(dir);
@@ -58,22 +59,21 @@ bool load_world(World* world) {
     num_definitions = 0;
     cell_definitions = read_cell_definitions("cell_definitions.txt", &num_definitions);
 
-    // Load each level
-    int level_index = 0;
+    // Load each layer
+    int layer_index = 0;
     while ((entry = readdir(dir)) != NULL) {
-        if (strstr(entry->d_name, "level-") != NULL && strstr(entry->d_name, ".bmp") != NULL) {
-            char level_path[256];
-            snprintf(level_path, sizeof(level_path), "levels/%s", entry->d_name);
-
-            SDL_Surface* level_surface = SDL_LoadBMP(level_path);
-            if (level_surface == NULL) {
-                printf("Failed to load level %s\n", entry->d_name);
+        if (strstr(entry->d_name, "layer-") != NULL && strstr(entry->d_name, ".bmp") != NULL) {
+            char layer_path[256];
+            snprintf(layer_path, sizeof(layer_path), "%s/%s", leveldir, entry->d_name);
+            SDL_Surface* layer_surface = SDL_LoadBMP(layer_path);
+            if (layer_surface == NULL) {
+                printf("Failed to load layer %s at %s \n", entry->d_name, layer_path);
                 continue;
             }
 
-            parse_level_from_surface(level_surface, &world->levels[level_index]);
-            SDL_FreeSurface(level_surface);
-            level_index++;
+            parse_layer_from_surface(layer_surface, &world->layers[layer_index]);
+            SDL_FreeSurface(layer_surface);
+            layer_index++;
         }
     }
 
@@ -82,16 +82,16 @@ bool load_world(World* world) {
 }
 
 void free_world(World* world) {
-    for (int i = 0; i < world->num_levels; ++i) {
-        Level* level = &world->levels[i];
-        for (int y = 0; y < level->height; ++y) {
-            free(level->cells[y]);
+    for (int i = 0; i < world->num_layers; ++i) {
+        Layer* layer = &world->layers[i];
+        for (int y = 0; y < layer->height; ++y) {
+            free(layer->cells[y]);
         }
-        free(level->cells);
+        free(layer->cells);
     }
-    free(world->levels);
-    world->levels = NULL;
-    world->num_levels = 0;
+    free(world->layers);
+    world->layers = NULL;
+    world->num_layers = 0;
 
     free(cell_definitions);
     cell_definitions = NULL;
@@ -100,19 +100,19 @@ void free_world(World* world) {
     base_bg_texture = NULL;
 }
 
-void parse_level_from_surface(SDL_Surface* surface, Level* level) {
-    level->width = surface->w;
-    level->height = surface->h;
-    level->cells = malloc(level->height * sizeof(Cell*));
+void parse_layer_from_surface(SDL_Surface* surface, Layer* layer) {
+    layer->width = surface->w;
+    layer->height = surface->h;
+    layer->cells = malloc(layer->height * sizeof(Cell*));
 
-    for (int y = 0; y < level->height; ++y) {
-        level->cells[y] = malloc(level->width * sizeof(Cell));
-        for (int x = 0; x < level->width; ++x) {
+    for (int y = 0; y < layer->height; ++y) {
+        layer->cells[y] = malloc(layer->width * sizeof(Cell));
+        for (int x = 0; x < layer->width; ++x) {
             Uint8 r, g, b;
             SDL_GetRGB(get_pixel32(surface, x, y), surface->format, &r, &g, &b);
             SDL_Color color = {r, g, b, 255};
        
-            level->cells[y][x] = *get_cell_definition_from_color(color, cell_definitions, num_definitions);
+            layer->cells[y][x] = *get_cell_definition_from_color(color, cell_definitions, num_definitions);
         }
     }
 }
@@ -223,25 +223,25 @@ int parse_cell_definition(const char *line, Cell *def) {
 }
 
 bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
-    int z_level = (int)(z_pos / CELL_Z_SCALE);
-    if (z_level >= world->num_levels) {
+    int z_layer = (int)(z_pos / CELL_Z_SCALE);
+    if (z_layer >= world->num_layers) {
         return false;
     }
 
-    int first_check_level = z_level >= 0 ? z_level : 0; 
+    int first_check_layer = z_layer >= 0 ? z_layer : 0; 
 
-    for (int i = first_check_level; i < world->num_levels; i++) {
-        Level *level = &world->levels[i];
-        if (!is_within_xy_bounds(level, cell_x, cell_y)) {
+    for (int i = first_check_layer; i < world->num_layers; i++) {
+        Layer *layer = &world->layers[i];
+        if (!is_within_xy_bounds(layer, cell_x, cell_y)) {
             continue;
         }
-        Cell *cell = get_cell(level, cell_x, cell_y);
+        Cell *cell = get_cell(layer, cell_x, cell_y);
 
         //Check ceiling if they are below player
         if (z_pos < (float)i * CELL_Z_SCALE) {
             if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
                 *out_obstacle_z = (float)i * CELL_Z_SCALE;
-                //debuglog(1, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
+                //debuglog(1, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
                 return true;
             }
         }
@@ -249,7 +249,7 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
         //Check floors
         if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
             *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
-            //debuglog(1, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlevel: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_level, z_pos);
+            //debuglog(1, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
             return true;
         }
     }
@@ -257,7 +257,7 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
     return false; // No obstacle found
 }
 
-CellInfo *get_cells_for_vector(Level *level, vec2 source, vec2 destination, int *num_cells) {
+CellInfo *get_cells_for_vector(Layer *layer, vec2 source, vec2 destination, int *num_cells) {
     assert(num_cells != NULL);
 
     // Allocate memory for the cell information array
@@ -279,9 +279,9 @@ CellInfo *get_cells_for_vector(Level *level, vec2 source, vec2 destination, int 
     int err2;
 
     while (1) {
-        // Check if the cell is within the level bounds
-        if (x0 >= 0 && x0 < level->width && y0 >= 0 && y0 < level->height) {
-            Cell *cell = get_cell(level, x0, y0);
+        // Check if the cell is within the layer bounds
+        if (x0 >= 0 && x0 < layer->width && y0 >= 0 && y0 < layer->height) {
+            Cell *cell = get_cell(layer, x0, y0);
             if (cell != NULL) {
                 // Add cell information to the array
                 cell_infos[*num_cells].cell = cell;
@@ -307,9 +307,9 @@ CellInfo *get_cells_for_vector(Level *level, vec2 source, vec2 destination, int 
     return cell_infos;
 }
 
-vec2 get_furthest_legal_position(Level *level, vec2 source, vec2 destination, float collision_buffer) {
+vec2 get_furthest_legal_position(Layer *layer, vec2 source, vec2 destination, float collision_buffer) {
     int num_cells;
-    CellInfo *cell_infos = get_cells_for_vector(level, source, destination, &num_cells);
+    CellInfo *cell_infos = get_cells_for_vector(layer, source, destination, &num_cells);
 
     vec2 movement_vector = vec2_subtract(destination, source);
     float movement_length = vec2_length(movement_vector);
@@ -343,29 +343,29 @@ vec2 get_furthest_legal_position(Level *level, vec2 source, vec2 destination, fl
     return source;
 }
 
-bool is_out_of_xy_bounds(Level *level, int x, int y) {
-    return x < 0 || x >= level->width || y < 0 || y >= level->height;
+bool is_out_of_xy_bounds(Layer *layer, int x, int y) {
+    return x < 0 || x >= layer->width || y < 0 || y >= layer->height;
 }
 
-bool is_within_xy_bounds(Level *level, int x, int y) {
-    return x >= 0 && x < level->width && y >= 0 && y < level->height;
+bool is_within_xy_bounds(Layer *layer, int x, int y) {
+    return x >= 0 && x < layer->width && y >= 0 && y < layer->height;
 }
 
-Cell *get_cell(Level *level, int x, int y) {
-    if (is_out_of_xy_bounds(level, x, y)) {
+Cell *get_cell(Layer *layer, int x, int y) {
+    if (is_out_of_xy_bounds(layer, x, y)) {
         return NULL;
     }
-    return &level->cells[y][x];
+    return &layer->cells[y][x];
 }
 
 bool get_world_cell(World *world, ivec3 grid_position, Cell** out_cell) {
-    if (grid_position.z < 0 || grid_position.z >= world->num_levels) {
+    if (grid_position.z < 0 || grid_position.z >= world->num_layers) {
         return false;
     }
-    Level *level = &world->levels[grid_position.z];
-    if (grid_position.y < 0 || grid_position.y >= level->width || grid_position.x < 0 || grid_position.x >= level->height) {
+    Layer *layer = &world->layers[grid_position.z];
+    if (grid_position.y < 0 || grid_position.y >= layer->width || grid_position.x < 0 || grid_position.x >= layer->height) {
         return false;
     }
-    *out_cell = &level->cells[grid_position.y][grid_position.x];
+    *out_cell = &layer->cells[grid_position.y][grid_position.x];
     return true;
 }

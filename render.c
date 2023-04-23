@@ -98,16 +98,16 @@ void render_world(World *world, Player *player) {
         render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, 1);
     }
 
-    for (int z = 0; z < world->num_levels; z++) {
-        Level *level = &world->levels[z];
-        for (int y = 0; y < level->height; ++y) {
-            for (int x = 0; x < level->width; ++x) {
-                Cell *cell = &level->cells[y][x];
+    for (int z = 0; z < world->num_layers; z++) {
+        Layer *layer = &world->layers[z];
+        for (int y = 0; y < layer->height; ++y) {
+            for (int x = 0; x < layer->width; ++x) {
+                Cell *cell = &layer->cells[y][x];
                 Cell *neighbors[4] = {
-                    get_cell(level, x + 1, y + 0),
-                    get_cell(level, x -1, y + 0),
-                    get_cell(level, x + 0, y + 1),
-                    get_cell(level, x + 0, y - 1)
+                    get_cell(layer, x + 1, y + 0),
+                    get_cell(layer, x -1, y + 0),
+                    get_cell(layer, x + 0, y + 1),
+                    get_cell(layer, x + 0, y - 1)
                 };
 
                 // Render floors

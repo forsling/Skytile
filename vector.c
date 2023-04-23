@@ -42,12 +42,12 @@ ivec2 get_grid_pos2(float x, float y) {
 }
 
 ivec3 get_grid_pos3(float x, float y, float z) {
-    ivec3 levelpos = {
+    ivec3 layerpos = {
         .x = (int)(x / CELL_XY_SCALE),
         .y = (int)(y / CELL_XY_SCALE),
         .z = (int)floor(z / CELL_Z_SCALE)
     };
-    return levelpos;
+    return layerpos;
 }
 
 float point_to_aabb_distance(float px, float py, float x1, float y1, float x2, float y2) {

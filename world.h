@@ -27,11 +27,11 @@ typedef struct {
     int width;
     int height;
     Cell** cells;
-} Level;
+} Layer;
 
 typedef struct {
-    int num_levels;
-    Level* levels;
+    int num_layers;
+    Layer* layers;
 } World;
 
 typedef struct {
@@ -39,17 +39,17 @@ typedef struct {
     vec2 position;
 } CellInfo;
 
-bool load_world(World* world);
+bool load_world(World* world, int number);
 void free_world(World* world);
-void parse_level_from_surface(SDL_Surface* surface, Level* level);
+void parse_layer_from_surface(SDL_Surface* surface, Layer* layer);
 int parse_cell_definition(const char *line, Cell *def);
-Cell* get_cell(Level* level, int x, int y);
+Cell* get_cell(Layer* layer, int x, int y);
 Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num_definitions);
 Cell* read_cell_definitions(const char *filename, int *num_definitions);
-CellInfo *get_cells_for_vector(Level *level, vec2 source, vec2 destination, int *num_cells);
-vec2 get_furthest_legal_position(Level *level, vec2 source, vec2 destination, float collision_buffer);
-bool is_out_of_xy_bounds(Level *level, int x, int y);
-bool is_within_xy_bounds(Level *level, int x, int y);
+CellInfo *get_cells_for_vector(Layer *layer, vec2 source, vec2 destination, int *num_cells);
+vec2 get_furthest_legal_position(Layer *layer, vec2 source, vec2 destination, float collision_buffer);
+bool is_out_of_xy_bounds(Layer *layer, int x, int y);
+bool is_within_xy_bounds(Layer *layer, int x, int y);
 bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z);
 bool get_world_cell(World *world, ivec3 grid_position, Cell** out_cell);
 

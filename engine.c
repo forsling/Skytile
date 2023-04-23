@@ -207,16 +207,16 @@ void update_player_position(Player *player, World *world,
     float target_z = player->position.z + (player->velocity_z * deltaTime);
     ivec3 target_grid_pos = get_grid_pos3(target_x, target_y, target_z);
 
-    int z_level = (int)floor(player->position.z / CELL_Z_SCALE);
-    Level *level = &world->levels[z_level];
+    int z_layer = (int)floor(player->position.z / CELL_Z_SCALE);
+    Layer *layer = &world->layers[z_layer];
 
     // Calculate the destination position
     vec2 source = {player->position.x, player->position.y};
     vec2 destination = {target_x, target_y};
 
     // Update the player's position based on the furthest legal position
-    if (z_level >= 0) {
-        vec2 furthest_legal_position = get_furthest_legal_position(level, source, destination, player->size);
+    if (z_layer >= 0) {
+        vec2 furthest_legal_position = get_furthest_legal_position(layer, source, destination, player->size);
         target_x = furthest_legal_position.x;
         target_y = furthest_legal_position.y;
     }
@@ -244,13 +244,13 @@ void update_player_position(Player *player, World *world,
     bool got_cell = get_world_cell(world, newpos, &cell_candidate);
     if (!got_cell || cell_candidate->type != CELL_SOLID) {
         if (!(player->position.x == target_x && player->position.y == target_y && player->position.z == target_z)) {
-            debuglog(1, "Player: %d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) \n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
+            debuglog(1, "Player: %d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) \n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_layer, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
         }
         player->position.x = target_x;
         player->position.y = target_y;
         player->position.z = target_z;
     } else {
-        debuglog(1, "Player: rejected: %d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) \n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
+        debuglog(1, "Player: rejected: %d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) \n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_layer, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
         ivec3 old_grid_pos = get_grid_pos3(player->position.x, player->position.y, player->position.z);
         Cell* cell_candidate;
         bool got_cell = get_world_cell(world, old_grid_pos, &cell_candidate);
@@ -287,7 +287,7 @@ void cleanup_engine() {
 
 bool load_engine_assets() {
     // Load world from a bitmap file
-    if (!load_world(&world)) {
+    if (!load_world(&world, 1)) {
         printf("Failed to load world.\n");
         return false;
     }
