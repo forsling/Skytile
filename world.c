@@ -1,14 +1,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "world.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <dirent.h>
-#include "vector.h"
 #include <assert.h>
-#include "utils.h"
 #include <math.h>
+
+#include "vector.h"
+#include "render.h"
+#include "world.h"
+#include "utils.h"
 
 Cell *cell_definitions;
 int num_definitions;
@@ -220,74 +222,6 @@ int parse_cell_definition(const char *line, Cell *def) {
     return 0;
 }
 
-// Function to create a GLuint texture from a sub-region of the given SDL_Surface
-GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height) {
-    if (!image) {
-        printf("Error: Invalid SDL_Surface\n");
-        return 0;
-    }
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    GLenum format = (image->format->BytesPerPixel == 4) ? GL_RGBA : GL_RGB;
-
-    // Create a new SDL_Surface for the sub-region
-    SDL_Surface* subImage = SDL_CreateRGBSurface(0, width, height, image->format->BitsPerPixel,
-                                                 image->format->Rmask, image->format->Gmask,
-                                                 image->format->Bmask, image->format->Amask);
-
-    // Copy the sub-region to the new SDL_Surface
-    SDL_Rect srcRect = {x, y, width, height};
-    SDL_BlitSurface(image, &srcRect, subImage, NULL);
-
-    // Create the texture from the sub-region surface
-    glTexImage2D(GL_TEXTURE_2D, 0, format, subImage->w, subImage->h, 0, format, GL_UNSIGNED_BYTE, subImage->pixels);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    SDL_FreeSurface(subImage);
-
-    return texture;
-}
-
-Uint32 get_pixel32(SDL_Surface *surface, int x, int y) {
-    int bpp = surface->format->BytesPerPixel;
-    Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
-
-    switch (bpp) {
-        case 1:
-            return *p;
-        case 2:
-            return *(Uint16 *)p;
-        case 3:
-            if (SDL_BYTEORDER == SDL_BIG_ENDIAN) {
-                return p[0] << 16 | p[1] << 8 | p[2];
-            } else {
-                return p[0] | p[1] << 8 | p[2] << 16;
-            }
-        case 4:
-            return *(Uint32 *)p;
-        default:
-            return 0;
-    }
-}
-
-SDL_Surface* load_surface(const char *filename) {
-    SDL_Surface *image = IMG_Load(filename);
-    if (!image) {
-        printf("Error: %s\n", IMG_GetError());
-        return NULL;
-    }
-    return image;
-}
-
-
 bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
     int z_level = (int)(z_pos / CELL_Z_SCALE);
     if (z_level >= world->num_levels) {
@@ -407,23 +341,6 @@ Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, fl
     }
 
     return source;
-}
-
-ivec2 get_grid_pos2(float x, float y) {
-    ivec2 gridpos = {
-        .x = (int)(x / CELL_XY_SCALE),
-        .y = (int)(y / CELL_XY_SCALE)
-    };
-    return gridpos;
-}
-
-ivec3 get_grid_pos3(float x, float y, float z) {
-    ivec3 levelpos = {
-        .x = (int)(x / CELL_XY_SCALE),
-        .y = (int)(y / CELL_XY_SCALE),
-        .z = (int)floor(z / CELL_Z_SCALE)
-    };
-    return levelpos;
 }
 
 bool is_out_of_xy_bounds(Level *level, int x, int y) {

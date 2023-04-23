@@ -24,6 +24,8 @@ float Vec2_length(Vec2 v);
 Vec2 Vec2_normalize(Vec2 v);
 Vec2 Vec2_multiply_scalar(Vec2 v, float scalar);
 Vec2 Vec2_add(Vec2 a, Vec2 b);
+ivec2 get_grid_pos2(float x, float y);
+ivec3 get_grid_pos3(float x, float y, float z);
 float point_to_aabb_distance(float px, float py, float x1, float y1, float x2, float y2);
 
 #endif // VECTOR_H
