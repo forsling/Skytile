@@ -23,13 +23,10 @@ const bool DEBUG_LOG = true;
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_GLContext gl_context = NULL;
-
-bool have_audio = false;
-
 World world;
 Player player;
-bool free_mode = false;
 
+bool have_audio = false;
 static bool quit = false;
 
 int sound_jump;
@@ -115,8 +112,10 @@ void main_loop() {
 
             if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_F) {
-                    free_mode = !free_mode;
-                    printf("Free mode set to %d\n", free_mode);
+                    bool free_mode = get_setting_bool("free_mode");
+                    char * new_free_mode_val = free_mode ? "false" : "true";
+                    set_setting("free_mode", SETTING_TYPE_BOOL, new_free_mode_val);
+                    printf("Free mode set to %d\n", new_free_mode_val);
                 }
             }
         }
@@ -170,7 +169,7 @@ void process_input(World *world, float deltaTime) {
     }
 
     if (state[SDL_SCANCODE_SPACE]) {
-        if (free_mode) {
+        if (get_setting_bool("free_mode")) {
             player.position.z -= player.speed * deltaTime;
         } else if (player.velocity_z == 0.0f) { // Jump only when the player is on the ground
             player.velocity_z = player.jump_velocity;
@@ -179,7 +178,7 @@ void process_input(World *world, float deltaTime) {
         } 
     }
     if (state[SDL_SCANCODE_LSHIFT]) {
-        if (free_mode) {
+        if (get_setting_bool("free_mode")) {
             player.position.z += player.speed * deltaTime;        }
     }
 
@@ -190,7 +189,7 @@ void update_player_position(Player *player, World *world,
                             float dx, float dy, float deltaTime) {
 
     // Handle free mode unrestricted movement
-    if (free_mode) {
+    if (get_setting_bool("free_mode")) {
         player->position.x += dx * player->speed * deltaTime;
         player->position.y += dy * player->speed * deltaTime;
         player->velocity_z = 0;

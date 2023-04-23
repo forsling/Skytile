@@ -14,6 +14,15 @@ typedef struct {
 static KeyValuePair settings_array[MAX_SETTINGS];
 static size_t settings_count = 0;
 
+static Setting *find_setting(const char *key) {
+    for (size_t i = 0; i < settings_count; ++i) {
+        if (strcmp(settings_array[i].key, key) == 0) {
+            return &settings_array[i].setting;
+        }
+    }
+    return NULL;
+}
+
 bool load_settings(const char *file_name) {
     initialize_default_settings();
 
@@ -44,12 +53,14 @@ bool load_settings(const char *file_name) {
                 type = SETTING_TYPE_FLOAT;
             } else if (strcmp(type_str, "string") == 0) {
                 type = SETTING_TYPE_STRING;
+            } else if (strcmp(type_str, "bool") == 0) {
+                type = SETTING_TYPE_BOOL;
             } else {
                 fprintf(stderr, "Error: Invalid setting type in settings file: %s\n", type_str);
                 continue;
             }
 
-            add_setting(key, type, value_str);
+            set_setting(key, type, value_str);
         } else {
             fprintf(stderr, "Error: Invalid setting format in settings file: %s\n", line);
         }
@@ -83,6 +94,10 @@ void write_settings(const char *file_name) {
                 type_str = "string";
                 fprintf(file, "%s:%s=%s\n", key, type_str, setting->value.string_value);
                 break;
+            case SETTING_TYPE_BOOL:
+                type_str = "bool";
+                fprintf(file, "%s:%s=%s\n", key, type_str, setting->value.int_value ? "true" : "false");
+                break;
             default:
                 fprintf(stderr, "Error: Invalid setting type: %d\n", setting->type);
                 continue;
@@ -93,55 +108,57 @@ void write_settings(const char *file_name) {
 }
 
 void initialize_default_settings() {
-    add_setting("screen_width", SETTING_TYPE_INT, "1280");
-    add_setting("screen_height", SETTING_TYPE_INT, "720");
-    add_setting("current_level", SETTING_TYPE_INT, "1");
-    add_setting("gravity", SETTING_TYPE_FLOAT, "15.0f");
+    set_setting("screen_width", SETTING_TYPE_INT, "1280");
+    set_setting("screen_height", SETTING_TYPE_INT, "720");
+    set_setting("current_level", SETTING_TYPE_INT, "1");
+    set_setting("gravity", SETTING_TYPE_FLOAT, "15.0f");
+    set_setting("free_mode", SETTING_TYPE_BOOL, "false");
 }
 
-void add_setting(const char *key, SettingType type, const char *value_str) {
-    if (settings_count >= MAX_SETTINGS) {
+void set_setting(const char *key, SettingType type, const char *value_str) {
+    // Try to find the setting
+    Setting *setting = find_setting(key);
+
+    // If the setting doesn't exist, add it
+    if (!setting) {
+        if (settings_count >= MAX_SETTINGS) {
+            return;
+        }
+
+        KeyValuePair *kv = &settings_array[settings_count++];
+        strncpy(kv->key, key, MAX_LINE_LENGTH);
+        kv->setting.type = type;
+        setting = &kv->setting;
+    } else if (setting->type != type) {
+        // If the setting exists but has a different type, report an error and return
+        fprintf(stderr, "Error: Setting type mismatch for key %s\n", key);
         return;
     }
 
-    KeyValuePair *kv = &settings_array[settings_count++];
-    strncpy(kv->key, key, MAX_LINE_LENGTH);
-    kv->setting.type = type;
-
+    // Update the value based on the type
     switch (type) {
         case SETTING_TYPE_INT:
-            kv->setting.value.int_value = atoi(value_str);
+            setting->value.int_value = atoi(value_str);
             break;
         case SETTING_TYPE_FLOAT:
-            kv->setting.value.float_value = atof(value_str);
+            setting->value.float_value = atof(value_str);
             break;
         case SETTING_TYPE_STRING:
-            kv->setting.value.string_value = strdup(value_str);
+            free(setting->value.string_value);
+            setting->value.string_value = strdup(value_str);
+            break;
+        case SETTING_TYPE_BOOL:
+            setting->value.int_value = strcmp(value_str, "true") == 0 ? 1 : 0;
             break;
     }
-}
-
-const char *get_setting_string(const char *key) {
-    for (size_t i = 0; i < settings_count; ++i) {
-        if (strcmp(settings_array[i].key, key) == 0 && settings_array[i].setting.type == SETTING_TYPE_STRING) {
-            return settings_array[i].setting.value.string_value;
-        }
-    }
-    char * message = "Failed to get setting string for key:";
-    char full_message[128];
-    snprintf(full_message, sizeof(full_message), "%s %s\n", message, key);
-    fprintf(stderr, full_message);
-    return NULL;
 }
 
 int get_setting_int(const char *key) {
-    for (size_t i = 0; i < settings_count; ++i) {
-        if (strcmp(settings_array[i].key, key) == 0 && settings_array[i].setting.type == SETTING_TYPE_INT) {
-            return settings_array[i].setting.value.int_value;
-        }
+    Setting *setting = find_setting(key);
+    if (setting && setting->type == SETTING_TYPE_INT) {
+        return setting->value.int_value;
     }
-
-    char * message = "Failed to get setting int for key:";
+    char * message = "Error: Could not find an integer setting with key:";
     char full_message[128];
     snprintf(full_message, sizeof(full_message), "%s %s\n", message, key);
     fprintf(stderr, full_message);
@@ -149,15 +166,37 @@ int get_setting_int(const char *key) {
 }
 
 float get_setting_float(const char *key) {
-    for (size_t i = 0; i < settings_count; ++i) {
-        if (strcmp(settings_array[i].key, key) == 0 && settings_array[i].setting.type == SETTING_TYPE_FLOAT) {
-            return settings_array[i].setting.value.float_value;
-        }
+    Setting *setting = find_setting(key);
+    if (setting && setting->type == SETTING_TYPE_FLOAT) {
+        return setting->value.float_value;
     }
-
-    char * message = "Failed to get setting float for key:";
+    char * message = "Error: Could not find a float setting with key:";
     char full_message[128];
     snprintf(full_message, sizeof(full_message), "%s %s\n", message, key);
     fprintf(stderr, full_message);
     return 0.0f;
+}
+
+const char *get_setting_string(const char *key) {
+    Setting *setting = find_setting(key);
+    if (setting && setting->type == SETTING_TYPE_STRING) {
+        return setting->value.string_value;
+    }
+    char * message = "Error: Could not find a string setting with key:";
+    char full_message[128];
+    snprintf(full_message, sizeof(full_message), "%s %s\n", message, key);
+    fprintf(stderr, full_message);
+    return NULL;
+}
+
+bool get_setting_bool(const char *key) {
+    Setting *setting = find_setting(key);
+    if (setting && setting->type == SETTING_TYPE_BOOL) {
+        return setting->value.int_value != 0;
+    }
+    char * message = "Error: Could not find a boolean setting with key:";
+    char full_message[128];
+    snprintf(full_message, sizeof(full_message), "%s %s\n", message, key);
+    fprintf(stderr, full_message);
+    return false;
 }
