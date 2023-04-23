@@ -14,6 +14,7 @@
         "${workspaceFolder}/src/audio.c",
         "${workspaceFolder}/src/utils.c",
         "${workspaceFolder}/src/vector.c",
+        "${workspaceFolder}/src/settings.c",
         "-o",
         "${workspaceFolder}/game.exe",
         "-I${workspaceFolder}/include",
