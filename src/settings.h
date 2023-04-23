@@ -19,7 +19,9 @@ typedef struct {
 } Setting;
 
 bool load_settings(const char *file_name);
+void write_settings(const char *file_name);
 void add_setting(const char *key, SettingType type, const char *value);
+void initialize_default_settings();
 
 const char *get_setting_string(const char *key);
 int get_setting_int(const char *key);

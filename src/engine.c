@@ -7,18 +7,18 @@
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_image.h>
 #include <GL/glu.h>
+
 #include "engine.h"
 #include "world.h"
 #include "vector.h"
 #include "utils.h"
 #include "render.h"
 #include "audio.h"
+#include "settings.h"
 
 const bool DEBUG_LOG = true;
 
 #define MAX_CELLS 16
-
-const float GRAVITY = 15.0f;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -199,7 +199,8 @@ void update_player_position(Player *player, World *world,
     }
 
     // Apply gravity
-    player->velocity_z += GRAVITY * deltaTime;
+    float gravity = get_setting_float("gravity");
+    player->velocity_z += gravity * deltaTime;
 
     // New player position (to be evaluated)
     float target_x = player->position.x + dx * player->speed * deltaTime;

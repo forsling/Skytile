@@ -8,9 +8,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (!load_settings("game_settings.txt")) {
+    if (!load_settings("settings.txt")) {
         fprintf(stderr, "Failed to load settings\n");
-        return 1;
+        return 2;
     }
 
     main_loop();

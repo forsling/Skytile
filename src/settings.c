@@ -15,37 +15,81 @@ static KeyValuePair settings_array[MAX_SETTINGS];
 static size_t settings_count = 0;
 
 bool load_settings(const char *file_name) {
+    initialize_default_settings();
+
     FILE *file = fopen(file_name, "r");
-    if (file == NULL) {
-        perror("Error opening settings file");
-        return false;
+    if (!file) {
+        if (errno == ENOENT) {
+            fprintf(stderr, "Warning: Settings file not found, creating with default values: %s\n", file_name);
+            write_settings(file_name);
+            return true;
+        } else {
+            fprintf(stderr, "Error: Could not open settings file: %s\n", file_name);
+            return false;
+        }
     }
 
-    char line[MAX_LINE_LENGTH];
-    while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
-        char key[MAX_LINE_LENGTH];
-        char type_str[MAX_LINE_LENGTH];
-        char value[MAX_LINE_LENGTH];
+    // Load settings from the file
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        char key[128];
+        char type_str[16];
+        char value_str[128];
 
-        sscanf(line, "%[^:]:%[^=]=%s", key, type_str, value);
+        if (sscanf(line, "%[^:]:%[^=]=%s", key, type_str, value_str) == 3) {
+            SettingType type;
+            if (strcmp(type_str, "int") == 0) {
+                type = SETTING_TYPE_INT;
+            } else if (strcmp(type_str, "float") == 0) {
+                type = SETTING_TYPE_FLOAT;
+            } else if (strcmp(type_str, "string") == 0) {
+                type = SETTING_TYPE_STRING;
+            } else {
+                fprintf(stderr, "Error: Invalid setting type in settings file: %s\n", type_str);
+                continue;
+            }
 
-        SettingType type;
-        if (strcmp(type_str, "int") == 0) {
-            type = SETTING_TYPE_INT;
-        } else if (strcmp(type_str, "float") == 0) {
-            type = SETTING_TYPE_FLOAT;
-        } else if (strcmp(type_str, "string") == 0) {
-            type = SETTING_TYPE_STRING;
+            add_setting(key, type, value_str);
         } else {
-            continue;
+            fprintf(stderr, "Error: Invalid setting format in settings file: %s\n", line);
         }
-
-        add_setting(key, type, value);
     }
 
     fclose(file);
-    initialize_default_settings();
     return true;
+}
+
+void write_settings(const char *file_name) {
+    FILE *file = fopen(file_name, "w");
+    if (!file) {
+        fprintf(stderr, "Error: Could not open settings file for writing: %s\n", file_name);
+        return;
+    }
+
+    for (int i = 0; i < settings_count; ++i) {
+        const char *type_str;
+        const char *key = settings_array[i].key;
+        Setting *setting = &settings_array[i].setting;
+        switch (setting->type) {
+            case SETTING_TYPE_INT:
+                type_str = "int";
+                fprintf(file, "%s:%s=%d\n", key, type_str, setting->value.int_value);
+                break;
+            case SETTING_TYPE_FLOAT:
+                type_str = "float";
+                fprintf(file, "%s:%s=%.2f\n", key, type_str, setting->value.float_value);
+                break;
+            case SETTING_TYPE_STRING:
+                type_str = "string";
+                fprintf(file, "%s:%s=%s\n", key, type_str, setting->value.string_value);
+                break;
+            default:
+                fprintf(stderr, "Error: Invalid setting type: %d\n", setting->type);
+                continue;
+        }        
+    }
+
+    fclose(file);
 }
 
 void initialize_default_settings() {
