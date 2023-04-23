@@ -9,7 +9,7 @@
 #include "vector.h"
 
 typedef struct Player {
-    Vec3 position;
+    vec3 position;
     float pitch, yaw;
     float speed;
     float velocity_z;

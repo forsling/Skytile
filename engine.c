@@ -12,6 +12,7 @@
 #include "vector.h"
 #include "utils.h"
 #include "render.h"
+#include "audio.h"
 
 const bool DEBUG_LOG = true;
 
@@ -23,11 +24,15 @@ SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_GLContext gl_context = NULL;
 
+bool have_audio = false;
+
 World world;
 Player player;
 bool free_mode = false;
 
 static bool quit = false;
+
+int sound_jump;
 
 bool init_engine() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -46,6 +51,9 @@ bool init_engine() {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return false;
     }
+
+    have_audio = audio_init();
+    sound_jump = audio_load_sound("assets/jump1.wav");
 
     gl_context = SDL_GL_CreateContext(window);
     if (gl_context == NULL) {
@@ -167,6 +175,7 @@ void process_input(World *world, float deltaTime) {
         } else if (player.velocity_z == 0.0f) { // Jump only when the player is on the ground
             player.velocity_z = player.jump_velocity;
             isJumping = true;
+            audio_play_sound(sound_jump, 0.2f);
         } 
     }
     if (state[SDL_SCANCODE_LSHIFT]) {
@@ -287,4 +296,5 @@ bool load_engine_assets() {
 
 void free_engine_assets() {
     free_world(&world);
+    audio_quit();
 }
