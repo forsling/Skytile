@@ -303,11 +303,6 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
         }
         Cell *cell = get_cell(level, cell_x, cell_y);
 
-        // if (cell->type == CELL_SOLID) {
-        //     *out_obstacle_z = (float)i * CELL_Z_SCALE;
-        //     return true;
-        // }
-
         //Check ceiling if they are below player
         if (z_pos < (float)i * CELL_Z_SCALE) {
             if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {

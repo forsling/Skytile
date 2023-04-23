@@ -71,8 +71,8 @@ bool init_engine() {
 
     // Initialize player object
     player = (struct Player) {
-        .position.x = 7.5f,
-        .position.y = 7.5f,
+        .position.x = 11.0f,
+        .position.y = 9.0f,
         .position.z = 0.0f,
         .height = CELL_Z_SCALE / 2,
         .velocity_z = 0.0f,
@@ -91,10 +91,11 @@ bool init_engine() {
 
 void main_loop() {
     SDL_Event event;
-
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
     Uint32 lastFrameTime = 0;
+    const Uint32 targetFrameRate = 120;
+    const Uint32 targetFrameTime = 1000 / targetFrameRate; // 1000ms / target FPS
 
     while (!quit) {
         Uint32 currentFrameTime = SDL_GetTicks();
@@ -122,7 +123,12 @@ void main_loop() {
 
         SDL_GL_SwapWindow(window);
 
-        SDL_Delay(10);
+        // Cap the framerate
+        Uint32 elapsedTime = SDL_GetTicks() - currentFrameTime;
+        if (elapsedTime < targetFrameTime) {
+            SDL_Delay(targetFrameTime - elapsedTime);
+        }
+
         lastFrameTime = currentFrameTime;
     }
 
@@ -229,12 +235,14 @@ void update_player_position(Player *player, World *world,
     Cell* cell_candidate;
     bool got_cell = get_world_cell(world, newpos, &cell_candidate);
     if (!got_cell || cell_candidate->type != CELL_SOLID) {
+        if (!(player->position.x == target_x && player->position.y == target_y && player->position.z == target_z)) {
+            debuglog(1, "Player: %d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) \n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
+        }
         player->position.x = target_x;
         player->position.y = target_y;
         player->position.z = target_z;
-        debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) Accepted\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
     } else {
-        debuglog(1, "%d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) Rejected\n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
+        debuglog(1, "Player: rejected: %d,%d (%f, %f, %d) -> %d,%d (%f, %f, %d) \n", (int)(player->position.x / CELL_XY_SCALE), (int)(player->position.y / CELL_XY_SCALE), player->position.x, player->position.y, z_level, target_grid_pos.x, target_grid_pos.y, target_x, target_y, (int)floor(target_z / CELL_Z_SCALE));
         ivec3 old_grid_pos = get_grid_pos3(player->position.x, player->position.y, player->position.z);
         Cell* cell_candidate;
         bool got_cell = get_world_cell(world, old_grid_pos, &cell_candidate);
