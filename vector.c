@@ -2,34 +2,34 @@
 #include "math.h"
 #include "world.h"
 
-// Calculate the length of a Vec2 vector
-float Vec2_length(Vec2 v) {
+// Calculate the length of a vec2 vector
+float vec2_length(vec2 v) {
     return sqrtf(v.x * v.x + v.y * v.y);
 }
 
-// Subtract two Vec2 vectors
-Vec2 Vec2_subtract(Vec2 a, Vec2 b) {
-    Vec2 result = {a.x - b.x, a.y - b.y};
+// Subtract two vec2 vectors
+vec2 vec2_subtract(vec2 a, vec2 b) {
+    vec2 result = {a.x - b.x, a.y - b.y};
     return result;
 }
 
-// Normalize a Vec2 vector
-Vec2 Vec2_normalize(Vec2 v) {
-    float length = Vec2_length(v);
+// Normalize a vec2 vector
+vec2 vec2_normalize(vec2 v) {
+    float length = vec2_length(v);
     if (length == 0.0f) {
-        return (Vec2){0.0f, 0.0f};
+        return (vec2){0.0f, 0.0f};
     }
-    return (Vec2){v.x / length, v.y / length};
+    return (vec2){v.x / length, v.y / length};
 }
 
-// Multiply a Vec2 vector by a scalar
-Vec2 Vec2_multiply_scalar(Vec2 v, float scalar) {
-    Vec2 result = {v.x * scalar, v.y * scalar};
+// Multiply a vec2 vector by a scalar
+vec2 vec2_multiply_scalar(vec2 v, float scalar) {
+    vec2 result = {v.x * scalar, v.y * scalar};
     return result;
 }
 
-Vec2 Vec2_add(Vec2 a, Vec2 b) {
-    Vec2 result = {a.x + b.x, a.y + b.y};
+vec2 vec2_add(vec2 a, vec2 b) {
+    vec2 result = {a.x + b.x, a.y + b.y};
     return result;
 }
 

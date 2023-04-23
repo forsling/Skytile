@@ -257,7 +257,7 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
     return false; // No obstacle found
 }
 
-CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int *num_cells) {
+CellInfo *get_cells_for_vector(Level *level, vec2 source, vec2 destination, int *num_cells) {
     assert(num_cells != NULL);
 
     // Allocate memory for the cell information array
@@ -285,7 +285,7 @@ CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int 
             if (cell != NULL) {
                 // Add cell information to the array
                 cell_infos[*num_cells].cell = cell;
-                cell_infos[*num_cells].position = (Vec2){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE};
+                cell_infos[*num_cells].position = (vec2){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE};
                 (*num_cells)++;
             }
         }
@@ -307,22 +307,22 @@ CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int 
     return cell_infos;
 }
 
-Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, float collision_buffer) {
+vec2 get_furthest_legal_position(Level *level, vec2 source, vec2 destination, float collision_buffer) {
     int num_cells;
     CellInfo *cell_infos = get_cells_for_vector(level, source, destination, &num_cells);
 
-    Vec2 movement_vector = Vec2_subtract(destination, source);
-    float movement_length = Vec2_length(movement_vector);
-    Vec2 movement_unit_vector = Vec2_normalize(movement_vector);
+    vec2 movement_vector = vec2_subtract(destination, source);
+    float movement_length = vec2_length(movement_vector);
+    vec2 movement_unit_vector = vec2_normalize(movement_vector);
 
     for (float distance = movement_length; distance >= 0.0f; distance -= collision_buffer) {
-        Vec2 candidate_position = Vec2_add(source, Vec2_multiply_scalar(movement_unit_vector, distance));
+        vec2 candidate_position = vec2_add(source, vec2_multiply_scalar(movement_unit_vector, distance));
         bool is_valid = true;
 
         for (int i = 0; i < num_cells; i++) {
             CellInfo cell_info = cell_infos[i];
             Cell *cell = cell_info.cell;
-            Vec2 cell_position = cell_info.position;
+            vec2 cell_position = cell_info.position;
 
             if (cell != NULL && cell->type == CELL_SOLID) {
                 //debuglog(1, "Solid cell found at (%f, %f)\n", cell_info.position.x, cell_info.position.y);

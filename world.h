@@ -36,7 +36,7 @@ typedef struct {
 
 typedef struct {
     Cell* cell;
-    Vec2 position;
+    vec2 position;
 } CellInfo;
 
 bool load_world(World* world);
@@ -46,8 +46,8 @@ int parse_cell_definition(const char *line, Cell *def);
 Cell* get_cell(Level* level, int x, int y);
 Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num_definitions);
 Cell* read_cell_definitions(const char *filename, int *num_definitions);
-CellInfo *get_cells_for_vector(Level *level, Vec2 source, Vec2 destination, int *num_cells);
-Vec2 get_furthest_legal_position(Level *level, Vec2 source, Vec2 destination, float collision_buffer);
+CellInfo *get_cells_for_vector(Level *level, vec2 source, vec2 destination, int *num_cells);
+vec2 get_furthest_legal_position(Level *level, vec2 source, vec2 destination, float collision_buffer);
 bool is_out_of_xy_bounds(Level *level, int x, int y);
 bool is_within_xy_bounds(Level *level, int x, int y);
 bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z);

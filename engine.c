@@ -26,7 +26,6 @@ SDL_GLContext gl_context = NULL;
 World world;
 Player player;
 bool free_mode = false;
-bool hit_z = false;
 
 static bool quit = false;
 
@@ -203,12 +202,12 @@ void update_player_position(Player *player, World *world,
     Level *level = &world->levels[z_level];
 
     // Calculate the destination position
-    Vec2 source = {player->position.x, player->position.y};
-    Vec2 destination = {target_x, target_y};
+    vec2 source = {player->position.x, player->position.y};
+    vec2 destination = {target_x, target_y};
 
     // Update the player's position based on the furthest legal position
     if (z_level >= 0) {
-        Vec2 furthest_legal_position = get_furthest_legal_position(level, source, destination, player->size);
+        vec2 furthest_legal_position = get_furthest_legal_position(level, source, destination, player->size);
         target_x = furthest_legal_position.x;
         target_y = furthest_legal_position.y;
     }
