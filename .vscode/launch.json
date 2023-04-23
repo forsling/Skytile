@@ -1,26 +1,22 @@
 {
     "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "C: Build and debug active file",
+    "configurations": [{
+        "name": "C: Build and debug",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${fileDirname}\\game.exe",
+        "program": "${workspaceFolder}/game.exe",
         "args": [],
         "stopAtEntry": false,
-        "cwd": "${fileDirname}",
+        "cwd": "${workspaceFolder}",
         "environment": [],
         "externalConsole": false,
         "MIMode": "gdb",
-        "miDebuggerPath": "C:\\Users\\simon\\mingw64\\bin\\gdb.exe",
-        "setupCommands": [
-          {
+        "miDebuggerPath": "C:/Users/simon/mingw64/bin/gdb.exe",
+        "setupCommands": [{
             "description": "Enable pretty-printing for gdb",
             "text": "-enable-pretty-printing",
             "ignoreFailures": true
-          }
-        ],
-        "preLaunchTask": "C: Build active file"
-      }
-    ]
-  }
+        }],
+        "preLaunchTask": "C: Build"
+    }]
+}
