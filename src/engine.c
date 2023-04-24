@@ -284,7 +284,8 @@ void cleanup_engine() {
 
 bool load_engine_assets() {
     // Load world from a bitmap file
-    if (!load_world(&world, 1)) {
+    
+    if (!load_world(&world, get_setting_string("current_level"))) {
         printf("Failed to load world.\n");
         return false;
     }

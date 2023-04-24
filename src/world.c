@@ -20,21 +20,21 @@ Cell default_cell;
 const int CELL_XY_SCALE = 2;
 const int CELL_Z_SCALE = 4;
 
-bool load_world(World* world, int number) {
+bool load_world(World* world, const char *level_name) {
     DIR* dir;
     struct dirent* entry;
     int layer_count = 0;
     char leveldir[20];
-    snprintf(leveldir, sizeof(leveldir), "levels/level%d", number);
+    snprintf(leveldir, sizeof(leveldir), "levels/%s", level_name);
     dir = opendir(leveldir);
     if (dir == NULL) {
-        printf("Failed to open layers directory.\n");
+        printf("Failed to open level directory.\n");
         return false;
     }
 
     // Count the number of layer files
     while ((entry = readdir(dir)) != NULL) {
-        if (strstr(entry->d_name, "layer-") != NULL && strstr(entry->d_name, ".bmp") != NULL) {
+        if (strstr(entry->d_name, ".bmp") != NULL) {
             layer_count++;
         }
     }
@@ -62,7 +62,7 @@ bool load_world(World* world, int number) {
     // Load each layer
     int layer_index = 0;
     while ((entry = readdir(dir)) != NULL) {
-        if (strstr(entry->d_name, "layer-") != NULL && strstr(entry->d_name, ".bmp") != NULL) {
+        if (strstr(entry->d_name, ".bmp") != NULL) {
             char layer_path[256];
             snprintf(layer_path, sizeof(layer_path), "%s/%s", leveldir, entry->d_name);
             SDL_Surface* layer_surface = SDL_LoadBMP(layer_path);

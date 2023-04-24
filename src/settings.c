@@ -110,7 +110,7 @@ void write_settings(const char *file_name) {
 void initialize_default_settings() {
     set_setting("screen_width", SETTING_TYPE_INT, "1280");
     set_setting("screen_height", SETTING_TYPE_INT, "720");
-    set_setting("current_level", SETTING_TYPE_INT, "1");
+    set_setting("current_level", SETTING_TYPE_STRING, "darkchasm");
     set_setting("gravity", SETTING_TYPE_FLOAT, "15.0f");
     set_setting("free_mode", SETTING_TYPE_BOOL, "false");
     set_setting("player_pos_x", SETTING_TYPE_FLOAT, "5.0f");

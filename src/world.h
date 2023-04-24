@@ -39,7 +39,7 @@ typedef struct {
     vec2 position;
 } CellInfo;
 
-bool load_world(World* world, int number);
+bool load_world(World* world, const char *level_name);
 void free_world(World* world);
 void parse_layer_from_surface(SDL_Surface* surface, Layer* layer);
 int parse_cell_definition(const char *line, Cell *def);
