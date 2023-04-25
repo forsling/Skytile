@@ -52,6 +52,8 @@ bool init_engine() {
     }
 
     have_audio = audio_init();
+    float vol = get_setting_float("master_volume");
+    audio_set_volume(vol);
     sound_jump = audio_load_sound("assets/jump1.wav");
 
     gl_context = SDL_GL_CreateContext(window);

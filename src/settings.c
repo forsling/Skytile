@@ -116,6 +116,7 @@ void initialize_default_settings() {
     set_setting("player_pos_x", SETTING_TYPE_FLOAT, "5.0f");
     set_setting("player_pos_y", SETTING_TYPE_FLOAT, "5.0f");
     set_setting("player_pos_z", SETTING_TYPE_FLOAT, "-2.0f");
+    set_setting("master_volume", SETTING_TYPE_FLOAT, "1.0f");
 }
 
 void set_setting(const char *key, SettingType type, const char *value_str) {
