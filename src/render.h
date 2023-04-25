@@ -23,5 +23,6 @@ GLuint load_texture(const char *filename);
 GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height);
 Uint32 get_pixel32(SDL_Surface *surface, int x, int y);
 SDL_Surface* load_surface(const char *filename);
+void render_projectile(Projectile *projectile);
 
 #endif // RENDER_H

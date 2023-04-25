@@ -197,6 +197,23 @@ Uint32 get_pixel32(SDL_Surface *surface, int x, int y) {
     }
 }
 
+void render_projectile(Projectile *projectile) {
+    glPushMatrix();
+    glTranslatef(projectile->position.x, projectile->position.y, projectile->position.z);
+
+    glBindTexture(GL_TEXTURE_2D, projectile->texture);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f); glVertex3f(-projectile->size / 2, -projectile->size / 2, 0.0f);
+        glTexCoord2f(1.0f, 0.0f); glVertex3f( projectile->size / 2, -projectile->size / 2, 0.0f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f( projectile->size / 2,  projectile->size / 2, 0.0f);
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(-projectile->size / 2,  projectile->size / 2, 0.0f);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glPopMatrix();
+}
+
+
 SDL_Surface* load_surface(const char *filename) {
     SDL_Surface *image = IMG_Load(filename);
     if (!image) {

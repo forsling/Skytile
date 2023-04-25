@@ -18,6 +18,14 @@ typedef struct Player {
     float size;
 } Player;
 
+typedef struct {
+    vec3 position;
+    vec3 direction;
+    float speed;
+    float size;
+    GLuint texture;
+} Projectile;
+
 bool init_engine();
 void main_loop();
 void cleanup_engine();
@@ -27,5 +35,6 @@ void free_engine_assets();
 void process_input(World *world, float deltaTime);
 void process_mouse();
 void update_player_position(Player *player , World *world, float dx, float dy, float deltaTime);
+void calculate_projectile_direction(Player *player, vec3 *direction);
 
 #endif // ENGINE_H

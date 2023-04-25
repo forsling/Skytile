@@ -26,10 +26,18 @@ SDL_GLContext gl_context = NULL;
 World world;
 Player player;
 
+SDL_Surface* base_fg_texture;
+
 bool have_audio = false;
 static bool quit = false;
 
 int sound_jump;
+
+// Projectile state
+#define MAX_PROJECTILES 128
+Projectile projectiles[MAX_PROJECTILES];
+int num_projectiles = 0;
+GLuint projectile_texture;
 
 bool init_engine() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -92,6 +100,12 @@ bool init_engine() {
     return true;
 }
 
+void update_projectile(Projectile *projectile, float deltaTime) {
+    projectile->position.x += projectile->direction.x * projectile->speed * deltaTime;
+    projectile->position.y += projectile->direction.y * projectile->speed * deltaTime;
+    projectile->position.z += projectile->direction.z * projectile->speed * deltaTime;
+}
+
 void main_loop() {
     SDL_Event event;
     SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -105,26 +119,48 @@ void main_loop() {
         float deltaTime = fmin(((currentFrameTime - lastFrameTime) / 1000.0f), 0.1f);
 
         while (SDL_PollEvent(&event) != 0) {
-            if (event.type == SDL_QUIT) {
-                quit = true;
-            }
-
-            if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.scancode == SDL_SCANCODE_F) {
-                    bool free_mode = get_setting_bool("free_mode");
-                    char * new_free_mode_val = free_mode ? "false" : "true";
-                    set_setting("free_mode", SETTING_TYPE_BOOL, new_free_mode_val);
-                    printf("Free mode set to %d\n", new_free_mode_val);
-                }
+            switch (event.type) {
+                case SDL_QUIT:
+                    quit = true;
+                    break;
+                case SDL_KEYDOWN:
+                    if (event.key.keysym.scancode == SDL_SCANCODE_F) {
+                        bool free_mode = get_setting_bool("free_mode");
+                        char * new_free_mode_val = free_mode ? "false" : "true";
+                        set_setting("free_mode", SETTING_TYPE_BOOL, new_free_mode_val);
+                        printf("Free mode set to %d\n", new_free_mode_val);
+                    }
+                    break;
+                case SDL_MOUSEBUTTONDOWN:
+                    if (event.button.button == SDL_BUTTON_LEFT) {
+                        // Create a new projectile
+                        if (num_projectiles < MAX_PROJECTILES) {
+                            Projectile *proj = &projectiles[num_projectiles++];
+                            proj->position = player.position;
+                            calculate_projectile_direction(&player, &proj->direction);
+                            proj->speed = 20.0f;
+                            proj->size = 1.0f;
+                            proj->texture = projectile_texture;
+                        }
+                    }
+                    break;
             }
         }
 
         process_input(&world, deltaTime);
         process_mouse();
+        
+        for (int i = 0; i < num_projectiles; i++) {
+            update_projectile(&projectiles[i], deltaTime);
+        }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         render_world(&world, &player);
+        for (int i = 0; i < num_projectiles; i++) {
+            render_projectile(&projectiles[i]);
+        }
+
 
         SDL_GL_SwapWindow(window);
 
@@ -286,15 +322,28 @@ void cleanup_engine() {
 
 bool load_engine_assets() {
     // Load world from a bitmap file
-    
     if (!load_world(&world, get_setting_string("current_level"))) {
         printf("Failed to load world.\n");
         return false;
     }
+
+    base_fg_texture = load_surface("assets/fg.png");
+    projectile_texture = create_texture(base_fg_texture, 1088, 192, 32, 32);
+
     return true;
 }
 
 void free_engine_assets() {
     free_world(&world);
     audio_quit();
+}
+
+void calculate_projectile_direction(Player *player, vec3 *direction) {
+    float forward_x = cosf(player->yaw) * cosf(player->pitch);
+    float forward_y = sinf(player->yaw) * cosf(player->pitch);
+    float forward_z = -sinf(player->pitch);
+
+    direction->x = forward_x;
+    direction->y = forward_y;
+    direction->z = forward_z;
 }
