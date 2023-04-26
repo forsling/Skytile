@@ -16,21 +16,19 @@
 #include "audio.h"
 #include "settings.h"
 
-const bool DEBUG_LOG = true;
-
 #define MAX_CELLS 16
+
+static bool quit = false;
+const bool DEBUG_LOG = true;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_GLContext gl_context = NULL;
+SDL_Surface* base_fg_texture;
 World world;
 Player player;
 
-SDL_Surface* base_fg_texture;
-
 bool have_audio = false;
-static bool quit = false;
-
 int sound_jump;
 
 // Projectile state
@@ -90,15 +88,37 @@ bool init_engine() {
     player.jump_velocity = -8.0f;
     player.size = 0.3f * CELL_XY_SCALE;
 
+    memset(projectiles, 0, sizeof(projectiles));
+
     init_opengl(player);
 
     return true;
 }
 
 void update_projectile(Projectile *projectile, float deltaTime) {
-    projectile->position.x += projectile->direction.x * projectile->speed * deltaTime;
-    projectile->position.y += projectile->direction.y * projectile->speed * deltaTime;
-    projectile->position.z += projectile->direction.z * projectile->speed * deltaTime;
+    vec3 old_pos = {
+        .x = projectile->position.x, 
+        .y = projectile->position.y, 
+        .z = projectile->position.z
+    };
+    vec3 new_pos = {
+        .x = projectile->position.x + projectile->direction.x * projectile->speed * deltaTime,
+        .y = projectile->position.y + projectile->direction.y * projectile->speed * deltaTime,
+        .z = projectile->position.z + projectile->direction.z * projectile->speed * deltaTime
+    };
+
+    int num_cells;
+    CellInfo3D *cell_infos = get_cells_for_vector_3d(&world, old_pos, new_pos, &num_cells);
+    for (int i = 0; i < num_cells; i++) {
+        CellInfo3D cell_info = cell_infos[i];
+        Cell *cell = cell_info.cell;
+        vec3 cell_position = cell_info.position;
+
+        if (cell != NULL && cell->type == CELL_SOLID) {
+            projectile->active = false;
+        }
+    }
+    projectile->position = new_pos;
 }
 
 void main_loop() {
@@ -129,13 +149,18 @@ void main_loop() {
                 case SDL_MOUSEBUTTONDOWN:
                     if (event.button.button == SDL_BUTTON_LEFT) {
                         // Create a new projectile
-                        if (num_projectiles < MAX_PROJECTILES) {
-                            Projectile *proj = &projectiles[num_projectiles++];
-                            proj->position = player.position;
-                            calculate_projectile_direction(&player, &proj->direction);
-                            proj->speed = 20.0f;
-                            proj->size = 1.0f;
-                            proj->texture = projectile_texture;
+                        for (int i = 0; i < MAX_PROJECTILES; i++) {
+                            if (!projectiles[i].active) {
+                                Projectile *proj = &projectiles[i];
+                                proj->active = true;
+                                proj->position = player.position;
+                                proj->speed = 20.0f;
+                                proj->size = 1.0f;
+                                proj->texture = projectile_texture;
+                                calculate_projectile_direction(&player, &proj->direction);
+                                num_projectiles++;
+                                break;
+                            }
                         }
                     }
                     break;
@@ -146,7 +171,9 @@ void main_loop() {
         process_mouse();
         
         for (int i = 0; i < num_projectiles; i++) {
-            update_projectile(&projectiles[i], deltaTime);
+            if (projectiles[i].active) {
+                update_projectile(&projectiles[i], deltaTime);
+            }
         }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

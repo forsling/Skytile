@@ -257,6 +257,70 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
     return false; // No obstacle found
 }
 
+CellInfo3D *get_cells_for_vector_3d(World *world, vec3 source, vec3 destination, int *num_cells) {
+    assert(num_cells != NULL);
+
+    // Allocate memory for the cell information array
+    static CellInfo3D cell_infos[MAX_CELLS];
+    *num_cells = 0;
+
+    // Convert source and destination to cell coordinates
+    int x0 = (int)(source.x / CELL_XY_SCALE);
+    int y0 = (int)(source.y / CELL_XY_SCALE);
+    int z0 = (int)(source.z / CELL_Z_SCALE);
+    int x1 = (int)(destination.x / CELL_XY_SCALE);
+    int y1 = (int)(destination.y / CELL_XY_SCALE);
+    int z1 = (int)(destination.z / CELL_Z_SCALE);
+
+    // Bresenham's line algorithm in 3D
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    int dz = abs(z1 - z0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int sz = (z0 < z1) ? 1 : -1;
+
+    int dm = MAX(dx, MAX(dy, dz));
+    int i;
+    for (i = dm * 2; i > 0; i--) {
+        // Check if the cell is within the world bounds
+        if (x0 >= 0 && x0 < world->layers[0].width &&
+            y0 >= 0 && y0 < world->layers[0].height &&
+            z0 >= 0 && z0 < world->num_layers) {
+            Cell* cell;
+            if (get_world_cell(world, (ivec3){x0, y0, z0}, &cell)) {
+                // Add cell information to the array
+                cell_infos[*num_cells].cell = cell;
+                cell_infos[*num_cells].position = (vec3){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE, z0 * CELL_Z_SCALE};
+                (*num_cells)++;
+            }
+        }
+
+        if (x0 == x1 && y0 == y1 && z0 == z1) {
+            break;
+        }
+
+        int x_err = 2 * abs(dm - dx);
+        int y_err = 2 * abs(dm - dy);
+        int z_err = 2 * abs(dm - dz);
+
+        if (x_err <= dm) {
+            dm -= dx;
+            x0 += sx;
+        }
+        if (y_err <= dm) {
+            dm -= dy;
+            y0 += sy;
+        }
+        if (z_err <= dm) {
+            dm -= dz;
+            z0 += sz;
+        }
+    }
+
+    return cell_infos;
+}
+
 CellInfo *get_cells_for_vector(Layer *layer, vec2 source, vec2 destination, int *num_cells) {
     assert(num_cells != NULL);
 

@@ -24,6 +24,7 @@ typedef struct {
     float speed;
     float size;
     GLuint texture;
+    bool active;
 } Projectile;
 
 bool init_engine();

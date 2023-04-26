@@ -39,11 +39,17 @@ typedef struct {
     vec2 position;
 } CellInfo;
 
+typedef struct {
+    Cell* cell;
+    vec3 position;
+} CellInfo3D;
+
 bool load_world(World* world, const char *level_name);
 void free_world(World* world);
 void parse_layer_from_surface(SDL_Surface* surface, Layer* layer);
 int parse_cell_definition(const char *line, Cell *def);
 Cell* get_cell(Layer* layer, int x, int y);
+CellInfo3D *get_cells_for_vector_3d(World *world, vec3 source, vec3 destination, int *num_cells);
 Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num_definitions);
 Cell* read_cell_definitions(const char *filename, int *num_definitions);
 CellInfo *get_cells_for_vector(Layer *layer, vec2 source, vec2 destination, int *num_cells);
@@ -52,5 +58,7 @@ bool is_out_of_xy_bounds(Layer *layer, int x, int y);
 bool is_within_xy_bounds(Layer *layer, int x, int y);
 bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z);
 bool get_world_cell(World *world, ivec3 grid_position, Cell** out_cell);
+
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #endif // WORLD_H
