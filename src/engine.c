@@ -34,7 +34,6 @@ int sound_jump;
 // Projectile state
 #define MAX_PROJECTILES 128
 Projectile projectiles[MAX_PROJECTILES];
-int num_projectiles = 0;
 GLuint projectile_texture;
 
 bool init_engine() {
@@ -96,6 +95,14 @@ bool init_engine() {
 }
 
 void update_projectile(Projectile *projectile, float deltaTime) {
+    if (projectile->ttl < 1) {
+        return;
+    }
+    projectile->ttl--;
+    if (!projectile->active) {
+        return;
+    }
+
     vec3 old_pos = {
         .x = projectile->position.x, 
         .y = projectile->position.y, 
@@ -116,6 +123,7 @@ void update_projectile(Projectile *projectile, float deltaTime) {
 
         if (cell != NULL && cell->type == CELL_SOLID) {
             projectile->active = false;
+            projectile->ttl = 100;
         }
     }
     projectile->position = new_pos;
@@ -150,15 +158,15 @@ void main_loop() {
                     if (event.button.button == SDL_BUTTON_LEFT) {
                         // Create a new projectile
                         for (int i = 0; i < MAX_PROJECTILES; i++) {
-                            if (!projectiles[i].active) {
+                            if (projectiles[i].ttl < 1) {
                                 Projectile *proj = &projectiles[i];
-                                proj->active = true;
                                 proj->position = player.position;
                                 proj->speed = 20.0f;
                                 proj->size = 1.0f;
                                 proj->texture = projectile_texture;
+                                proj->ttl = 1000;
+                                proj->active = true;
                                 calculate_projectile_direction(&player, &proj->direction);
-                                num_projectiles++;
                                 break;
                             }
                         }
@@ -170,19 +178,20 @@ void main_loop() {
         process_input(&world, deltaTime);
         process_mouse();
         
-        for (int i = 0; i < num_projectiles; i++) {
-            if (projectiles[i].active) {
-                update_projectile(&projectiles[i], deltaTime);
-            }
+        for (int i = 0; i < MAX_PROJECTILES; i++) {
+            update_projectile(&projectiles[i], deltaTime);
         }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         render_world(&world, &player);
-        for (int i = 0; i < num_projectiles; i++) {
-            render_projectile(&projectiles[i]);
-        }
 
+        // Render porjectiles
+        for (int i = 0; i < MAX_PROJECTILES; i++) {
+            if (projectiles[i].ttl > 0) {
+                render_projectile(&projectiles[i]);
+            }
+        }
 
         SDL_GL_SwapWindow(window);
 

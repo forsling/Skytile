@@ -24,6 +24,7 @@ typedef struct {
     float speed;
     float size;
     GLuint texture;
+    int ttl;
     bool active;
 } Projectile;
 
