@@ -1,22 +1,51 @@
 {
     "version": "0.2.0",
     "configurations": [{
-        "name": "C: Build and debug",
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/game.exe",
-        "args": [],
-        "stopAtEntry": false,
-        "cwd": "${workspaceFolder}",
-        "environment": [],
-        "externalConsole": false,
-        "MIMode": "gdb",
-        "miDebuggerPath": "C:/Users/simon/mingw64/bin/gdb.exe",
-        "setupCommands": [{
-            "description": "Enable pretty-printing for gdb",
-            "text": "-enable-pretty-printing",
-            "ignoreFailures": true
-        }],
-        "preLaunchTask": "C: Build Server"
+            "name": "C: Debug Game",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/game.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:/Users/simon/mingw64/bin/gdb.exe",
+            "setupCommands": [{
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            }],
+            "preLaunchTask": "C: Build",
+            "launchCompleteCommand": "exec-run"
+        },
+        {
+            "name": "C: Debug Server",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/server.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:/Users/simon/mingw64/bin/gdb.exe",
+            "setupCommands": [{
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            }],
+            "preLaunchTask": "C: Build Server",
+            "launchCompleteCommand": "exec-run"
+        }
+    ],
+    "compounds": [{
+        "name": "C: Debug Game and Server",
+        "configurations": [
+            "C: Debug Game",
+            "C: Debug Server"
+        ]
     }]
 }
