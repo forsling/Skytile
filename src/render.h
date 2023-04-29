@@ -4,7 +4,7 @@
 #include <GL/gl.h>
 #include <SDL2/SDL_image.h>
 #include "world.h"
-#include "engine.h"
+#include "client.h"
 #include "game_logic.h"
 
 typedef enum {

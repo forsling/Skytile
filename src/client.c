@@ -5,7 +5,7 @@
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_image.h>
 
-#include "engine.h"
+#include "client.h"
 #include "world.h"
 #include "vector.h"
 #include "utils.h"
