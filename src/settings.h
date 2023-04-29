@@ -29,4 +29,4 @@ int get_setting_int(const char *key);
 float get_setting_float(const char *key);
 bool get_setting_bool(const char *key);
 
-#endif // SETTINGS_H
+#endif // SETTINGS_Hw

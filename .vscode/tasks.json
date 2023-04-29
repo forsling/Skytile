@@ -9,6 +9,7 @@
         "-g",
         "${workspaceFolder}/src/main.c",
         "${workspaceFolder}/src/engine.c",
+        "${workspaceFolder}/src/game_logic.c",
         "${workspaceFolder}/src/world.c",
         "${workspaceFolder}/src/render.c",
         "${workspaceFolder}/src/audio.c",

@@ -9,6 +9,9 @@
 #include "settings.h"
 
 void init_opengl() {
+    // Set swap interval for Vsync
+    SDL_GL_SetSwapInterval(1);
+
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -201,11 +204,11 @@ Uint32 get_pixel32(SDL_Surface *surface, int x, int y) {
     }
 }
 
-void render_projectile(Projectile *projectile) {
+void render_projectile(Projectile *projectile, GLuint texture) {
     glPushMatrix();
     glTranslatef(projectile->position.x, projectile->position.y, projectile->position.z);
 
-    glBindTexture(GL_TEXTURE_2D, projectile->texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glBegin(GL_QUADS);
         glTexCoord2f(0.0f, 0.0f); glVertex3f(-projectile->size / 2, -projectile->size / 2, 0.0f);
         glTexCoord2f(1.0f, 0.0f); glVertex3f( projectile->size / 2, -projectile->size / 2, 0.0f);
