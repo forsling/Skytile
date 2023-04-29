@@ -67,7 +67,7 @@ typedef struct GameState {
     float delta_time;
 } GameState;
 
-void init_gamestate(GameState* gamestate);
+bool start_level(GameState* gamestate, const char* level);
 void update(GameState *game_state, InputState *input_state);
 
 #endif // GAME_LOGIC_H

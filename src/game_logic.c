@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "game_logic.h"
 #include "vector.h"
 #include "world.h"
@@ -195,7 +197,7 @@ static void process_mouse(GameState *game_state, InputState *input_state) {
     }
 }
 
-void init_gamestate(GameState* gamestate) {
+bool start_level(GameState* gamestate, const char* level) {
     // Initialize player object
     Player player = {0};
     player.position.x = get_setting_float("player_pos_x");
@@ -210,6 +212,12 @@ void init_gamestate(GameState* gamestate) {
     gamestate->delta_time = 0.0f;
 
     memset(gamestate->projectiles, 0, sizeof(gamestate->projectiles));
+
+    if (!load_world(&gamestate->world, level)) {
+        printf("Failed to load world.\n");
+        return false;
+    }
+    return true;
 }
 
 void update(GameState *game_state, InputState *input_state) {

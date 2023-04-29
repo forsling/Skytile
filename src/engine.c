@@ -17,8 +17,6 @@
 #include "settings.h"
 #include "game_logic.h"
 
-#define MAX_CELLS 16
-
 static bool quit = false;
 const bool DEBUG_LOG = true;
 
@@ -29,8 +27,6 @@ SDL_Surface* base_fg_texture;
 
 bool have_audio = false;
 int sound_jump;
-
-// Projectile state
 
 GLuint projectile_texture;
 GameState game_state;
@@ -49,17 +45,14 @@ bool init_engine() {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return false;
     }
+
+    // OpenGL
     gl_context = SDL_GL_CreateContext(window);
     if (gl_context == NULL) {
         printf("OpenGL context could not be created! SDL_Error: %s\n", SDL_GetError());
         return false;
     }
-
-    // Setup audio
-    have_audio = audio_init();
-    float vol = get_setting_float("master_volume");
-    audio_set_volume(vol);
-    sound_jump = audio_load_sound("assets/jump1.wav");
+    init_opengl();
 
     // SDL Image library
     int imgFlags = IMG_INIT_PNG;
@@ -68,14 +61,21 @@ bool init_engine() {
         return false;
     }
 
+    // Setup audio
+    have_audio = audio_init();
+    float vol = get_setting_float("master_volume");
+    audio_set_volume(vol);
 
-    init_gamestate(&game_state);
-
+    // Load assets
     if (!load_engine_assets(&game_state)) {
         return false;
     }
 
-    init_opengl();
+    // Start the level
+    const char* level = get_setting_string("current_level");
+    if (!start_level(&game_state, level)) {
+        return false;
+    }
 
     return true;
 }
@@ -223,14 +223,10 @@ void cleanup_engine() {
 }
 
 bool load_engine_assets(GameState* gamestate) {
-    // Load world from a bitmap file
-    if (!load_world(&gamestate->world, get_setting_string("current_level"))) {
-        printf("Failed to load world.\n");
-        return false;
-    }
-
     base_fg_texture = load_surface("assets/fg.png");
     projectile_texture = create_texture(base_fg_texture, 1088, 192, 32, 32);
+
+    sound_jump = audio_load_sound("assets/jump1.wav");
 
     return true;
 }
