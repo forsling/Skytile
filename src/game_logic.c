@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #include "game_logic.h"
 #include "vector.h"
@@ -8,6 +9,140 @@
 #include "math.h"
 
 const float MOUSE_SENSITIVITY = 0.001f;
+
+static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_pos, float* out_obstacle_z) {
+    int z_layer = (int)(z_pos / CELL_Z_SCALE);
+    if (z_layer >= world->num_layers) {
+        return false;
+    }
+
+    int first_check_layer = z_layer >= 0 ? z_layer : 0; 
+
+    for (int i = first_check_layer; i < world->num_layers; i++) {
+        Layer* layer = &world->layers[i];
+        if (!is_within_xy_bounds(layer, cell_x, cell_y)) {
+            continue;
+        }
+        Cell* cell = get_cell(layer, cell_x, cell_y);
+
+        //Check ceiling if they are below player
+        if (z_pos < (float)i * CELL_Z_SCALE) {
+            if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
+                *out_obstacle_z = (float)i * CELL_Z_SCALE;
+                //debuglog(1, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
+                return true;
+            }
+        }
+
+        //Check floors
+        if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
+            *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
+            //debuglog(1, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
+            return true;
+        }
+    }
+
+    return false; // No obstacle found
+}
+
+static CellInfo* get_cells_for_vector(World* world, vec3 source, vec3 destination, int* num_cells) {
+    assert(num_cells != NULL);
+
+    // Allocate memory for the cell information array
+    static CellInfo cell_infos[MAX_CELLS];
+    *num_cells = 0;
+
+    // Convert source and destination to cell coordinates
+    int x0 = (int)(source.x / CELL_XY_SCALE);
+    int y0 = (int)(source.y / CELL_XY_SCALE);
+    int z0 = (int)(source.z / CELL_Z_SCALE);
+    int x1 = (int)(destination.x / CELL_XY_SCALE);
+    int y1 = (int)(destination.y / CELL_XY_SCALE);
+    int z1 = (int)(destination.z / CELL_Z_SCALE);
+
+    // Bresenham's line algorithm in 3D
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    int dz = abs(z1 - z0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int sz = (z0 < z1) ? 1 : -1;
+
+    int dm = MAX(dx, MAX(dy, dz));
+    int i;
+    for (i = dm * 2; i > 0; i--) {
+        // Check if the cell is within the world bounds
+        if (x0 >= 0 && x0 < world->layers[0].width &&
+            y0 >= 0 && y0 < world->layers[0].height &&
+            z0 >= 0 && z0 < world->num_layers) {
+            Cell* cell;
+            if (get_world_cell(world, (ivec3){x0, y0, z0}, &cell)) {
+                // Add cell information to the array
+                cell_infos[*num_cells].cell = cell;
+                cell_infos[*num_cells].position = (vec3){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE, z0 * CELL_Z_SCALE};
+                (*num_cells)++;
+            }
+        }
+
+        if (x0 == x1 && y0 == y1 && z0 == z1) {
+            break;
+        }
+
+        int x_err = 2 * abs(dm - dx);
+        int y_err = 2 * abs(dm - dy);
+        int z_err = 2 * abs(dm - dz);
+
+        if (x_err <= dm) {
+            dm -= dx;
+            x0 += sx;
+        }
+        if (y_err <= dm) {
+            dm -= dy;
+            y0 += sy;
+        }
+        if (z_err <= dm) {
+            dm -= dz;
+            z0 += sz;
+        }
+    }
+
+    return cell_infos;
+}
+
+static vec3 get_furthest_legal_position(World* world, vec3 source, vec3 destination, float collision_buffer) {
+    int num_cells;
+    CellInfo* cell_infos = get_cells_for_vector(world, source, destination, &num_cells);
+    vec3 movement_vector = vec3_subtract(destination, source);
+    float movement_length = vec3_length(movement_vector);
+    vec3 movement_unit_vector = vec3_normalize(movement_vector);
+
+    for (float distance = movement_length; distance >= 0.0f; distance -= collision_buffer) {
+        vec3 candidate_position = vec3_add(source, vec3_multiply_scalar(movement_unit_vector, distance));
+        bool is_valid = true;
+
+        for (int i = 0; i < num_cells; i++) {
+            CellInfo cell_info = cell_infos[i];
+            Cell* cell = cell_info.cell;
+            vec3 cell_position = cell_info.position;
+
+            if (cell != NULL && cell->type == CELL_SOLID) {
+                float distance_to_cell = point_to_aabb_distance_3d(candidate_position.x, candidate_position.y, candidate_position.z,
+                                                                cell_position.x, cell_position.y, cell_position.z,
+                                                                cell_position.x + CELL_XY_SCALE, cell_position.y + CELL_XY_SCALE, cell_position.z + CELL_Z_SCALE);
+                if (distance_to_cell <= collision_buffer) {
+                    is_valid = false;
+                    break;
+                }
+            }
+        }
+
+        if (is_valid) {
+            return candidate_position;
+        }
+    }
+
+    return source;
+}
 
 static void calculate_projectile_direction(Player* player, vec3* direction) {
     float forward_x = cosf(player->yaw) * cosf(player->pitch);
@@ -56,9 +191,9 @@ static void update_projectile(World* world, Projectile* projectile, float deltaT
     };
 
     int num_cells;
-    CellInfo3D* cell_infos = get_cells_for_vector_3d(world, old_pos, new_pos, &num_cells);
+    CellInfo* cell_infos = get_cells_for_vector(world, old_pos, new_pos, &num_cells);
     for (int i = 0; i < num_cells; i++) {
-        CellInfo3D cell_info = cell_infos[i];
+        CellInfo cell_info = cell_infos[i];
         Cell* cell = cell_info.cell;
         vec3 cell_position = cell_info.position;
 
@@ -99,7 +234,7 @@ static void update_player_position(Player* player, World* world, float dx, float
 
     // Update the player's position based on the furthest legal position
     if (z_layer >= 0) {
-        vec3 furthest_legal_position = get_furthest_legal_position_3d(world, source, destination, player->size);
+        vec3 furthest_legal_position = get_furthest_legal_position(world, source, destination, player->size);
         target_x = furthest_legal_position.x;
         target_y = furthest_legal_position.y;
         target_z = furthest_legal_position.z;
