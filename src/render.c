@@ -7,6 +7,7 @@
 #include "render.h"
 #include "world.h"
 #include "settings.h"
+#include "game_logic.h"
 
 void init_opengl() {
     // Set swap interval for Vsync
@@ -220,6 +221,14 @@ void render_projectile(Projectile *projectile, GLuint texture) {
     glPopMatrix();
 }
 
+void render_projectiles(GameState *game_state, GLuint projectile_texture) {
+    for (int i = 0; i < MAX_PROJECTILES; i++) {
+        Projectile* projectile = &game_state->projectiles[i];
+        if (projectile->ttl > 0) {
+            render_projectile(projectile, projectile_texture);
+        }
+    }
+}
 
 SDL_Surface* load_surface(const char *filename) {
     SDL_Surface *image = IMG_Load(filename);

@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include <time.h>
-#include <stdarg.h>
 #include <stdlib.h>
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_image.h>
-#include <GL/glu.h>
 
 #include "engine.h"
 #include "world.h"
@@ -71,63 +68,7 @@ bool init_engine() {
         return false;
     }
 
-    // Start the level
-    const char* level = get_setting_string("current_level");
-    if (!start_level(&game_state, level)) {
-        return false;
-    }
-
     return true;
-}
-
-void main_loop() {
-    SDL_SetRelativeMouseMode(SDL_TRUE);
-
-    Uint32 lastFrameTime = 0;
-    const Uint32 targetFrameRate = 120;
-    const Uint32 targetFrameTime = 1000 / targetFrameRate; // 1000ms / target FPS
-
-    InputState input_state = {0};
-    InputState prev_input_state = {0};
-
-    // Initialize game state here if needed
-
-    while (!quit) {
-        Uint32 currentFrameTime = SDL_GetTicks();
-        float delta_time = fmin(((currentFrameTime - lastFrameTime) / 1000.0f), 0.1f);
-        game_state.delta_time = delta_time;
-
-        // Process input and update game state
-        prev_input_state = input_state;
-        input_state = process_input(&prev_input_state, delta_time);
-        update(&game_state, &input_state);
-        if (game_state.player.jumped) {
-            audio_play_sound(sound_jump, 0.2f);
-            game_state.player.jumped = false;
-        }
-
-        // Rendering
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        render_world(&game_state.world, &game_state.player);
-        // Render porjectiles
-        for (int i = 0; i < MAX_PROJECTILES; i++) {
-            Projectile* projectile = &game_state.projectiles[i];
-            if (projectile->ttl > 0) {
-                render_projectile(projectile, projectile_texture);
-            }
-        }
-        SDL_GL_SwapWindow(window);
-
-        // Cap the framerate
-        Uint32 elapsedTime = SDL_GetTicks() - currentFrameTime;
-        if (elapsedTime < targetFrameTime) {
-            SDL_Delay(targetFrameTime - elapsedTime);
-        }
-
-        lastFrameTime = currentFrameTime;
-    }
-
-    SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
 ButtonState get_mouse_button_state(uint32_t button, const InputState *prev_input_state) {
@@ -211,17 +152,6 @@ InputState process_input(InputState *previous_input_state, float deltaTime) {
     return new_input_state;
 }
 
-void cleanup_engine() {
-    free_engine_assets();
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    window = NULL;
-    renderer = NULL;
-
-    IMG_Quit();
-    SDL_Quit();
-}
-
 bool load_engine_assets(GameState* gamestate) {
     base_fg_texture = load_surface("assets/fg.png");
     projectile_texture = create_texture(base_fg_texture, 1088, 192, 32, 32);
@@ -234,4 +164,73 @@ bool load_engine_assets(GameState* gamestate) {
 void free_engine_assets() {
     free_world(&game_state.world);
     audio_quit();
+}
+
+void cleanup_engine() {
+    free_engine_assets();
+
+    SDL_DestroyRenderer(renderer);
+    renderer = NULL;
+
+    SDL_DestroyWindow(window);
+    window = NULL;
+
+    SDL_GL_DeleteContext(gl_context);
+    gl_context = NULL;
+
+    IMG_Quit();
+    SDL_Quit();
+}
+
+void play_sounds(GameState *game_state) {
+    if (game_state->player.jumped) {
+        audio_play_sound(sound_jump, 0.2f);
+        game_state->player.jumped = false;
+    }
+}
+
+void main_loop() {
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+
+    Uint32 lastFrameTime = 0;
+    const Uint32 targetFrameRate = 120;
+    const Uint32 targetFrameTime = 1000 / targetFrameRate; // 1000ms / target FPS
+
+    InputState input_state = {0};
+    InputState prev_input_state = {0};
+
+    // Start the level
+    const char* level = get_setting_string("current_level");
+    if (!start_level(&game_state, level)) {
+        printf("Fail to start level %s \n", level);
+        return;
+    }
+
+    while (!quit) {
+        Uint32 currentFrameTime = SDL_GetTicks();
+        float delta_time = fmin(((currentFrameTime - lastFrameTime) / 1000.0f), 0.1f);
+        game_state.delta_time = delta_time;
+
+        // Process input and update game state
+        prev_input_state = input_state;
+        input_state = process_input(&prev_input_state, delta_time);
+        update(&game_state, &input_state);
+        play_sounds(&game_state);
+
+        // Rendering
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        render_world(&game_state.world, &game_state.player);
+        render_projectiles(&game_state, projectile_texture);
+        SDL_GL_SwapWindow(window);
+
+        // Cap the framerate
+        Uint32 elapsedTime = SDL_GetTicks() - currentFrameTime;
+        if (elapsedTime < targetFrameTime) {
+            SDL_Delay(targetFrameTime - elapsedTime);
+        }
+
+        lastFrameTime = currentFrameTime;
+    }
+
+    SDL_SetRelativeMouseMode(SDL_FALSE);
 }

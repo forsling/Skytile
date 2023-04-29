@@ -9,13 +9,13 @@
 #include "vector.h"
 #include "game_logic.h"
 
+// Engine initialization and cleanup functions
 bool init_engine();
 void main_loop();
 void cleanup_engine();
+
+// Asset loading and freeing functions
 bool load_engine_assets();
 void free_engine_assets();
-
-InputState process_input(InputState *previous_input_state, float deltaTime);
-void process_mouse();
 
 #endif // ENGINE_H
