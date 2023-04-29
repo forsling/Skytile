@@ -81,7 +81,7 @@ void render_face(float x, float y, float z, float width, float height, Direction
     glEnd();
 }
 
-void render_world(World *world, Player *player) {
+void render_world(World* world, Player* player) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(90.0, (double)get_setting_int("screen_width") / (double)get_setting_int("screen_height"), 0.01, 500.0);
@@ -105,11 +105,11 @@ void render_world(World *world, Player *player) {
     }
 
     for (int z = 0; z < world->num_layers; z++) {
-        Layer *layer = &world->layers[z];
+        Layer* layer = &world->layers[z];
         for (int y = 0; y < layer->height; ++y) {
             for (int x = 0; x < layer->width; ++x) {
-                Cell *cell = &layer->cells[y][x];
-                Cell *neighbors[4] = {
+                Cell* cell = &layer->cells[y][x];
+                Cell* neighbors[4] = {
                     get_cell(layer, x + 1, y + 0),
                     get_cell(layer, x -1, y + 0),
                     get_cell(layer, x + 0, y + 1),
@@ -127,7 +127,7 @@ void render_world(World *world, Player *player) {
                 }
                 
                 for (int i = 0; i < 4; ++i) {
-                    Cell *neighbor = neighbors[i];
+                    Cell* neighbor = neighbors[i];
                     if (cell->type == CELL_OPEN && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0) {
                         //Render walls for adjacent solid blocks
                         render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_Z_SCALE, neighbor_dirs[i], neighbor->wall_texture);
@@ -183,9 +183,9 @@ GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height) {
     return texture;
 }
 
-Uint32 get_pixel32(SDL_Surface *surface, int x, int y) {
+Uint32 get_pixel32(SDL_Surface* surface, int x, int y) {
     int bpp = surface->format->BytesPerPixel;
-    Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+    Uint8* p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
 
     switch (bpp) {
         case 1:
@@ -205,7 +205,7 @@ Uint32 get_pixel32(SDL_Surface *surface, int x, int y) {
     }
 }
 
-void render_projectile(Projectile *projectile, GLuint texture) {
+void render_projectile(Projectile* projectile, GLuint texture) {
     glPushMatrix();
     glTranslatef(projectile->position.x, projectile->position.y, projectile->position.z);
 
@@ -221,7 +221,7 @@ void render_projectile(Projectile *projectile, GLuint texture) {
     glPopMatrix();
 }
 
-void render_projectiles(GameState *game_state, GLuint projectile_texture) {
+void render_projectiles(GameState* game_state, GLuint projectile_texture) {
     for (int i = 0; i < MAX_PROJECTILES; i++) {
         Projectile* projectile = &game_state->projectiles[i];
         if (projectile->ttl > 0) {
@@ -230,8 +230,8 @@ void render_projectiles(GameState *game_state, GLuint projectile_texture) {
     }
 }
 
-SDL_Surface* load_surface(const char *filename) {
-    SDL_Surface *image = IMG_Load(filename);
+SDL_Surface* load_surface(const char* filename) {
+    SDL_Surface* image = IMG_Load(filename);
     if (!image) {
         printf("Error: %s\n", IMG_GetError());
         return NULL;
@@ -239,8 +239,8 @@ SDL_Surface* load_surface(const char *filename) {
     return image;
 }
 
-GLuint load_texture(const char *filename) {
-    SDL_Surface *surface = IMG_Load(filename);
+GLuint load_texture(const char* filename) {
+    SDL_Surface* surface = IMG_Load(filename);
     if (!surface) {
         printf("Error loading texture: %s\n", IMG_GetError());
         return 0;

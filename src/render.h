@@ -18,12 +18,12 @@ typedef enum {
 
 void init_opengl();
 void render_face(float x, float y, float z, float width, float height, Direction direction, GLuint texture);
-void render_world(World *world, Player *player);
+void render_world(World* world, Player* player);
 
-GLuint load_texture(const char *filename);
+GLuint load_texture(const char* filename);
 GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height);
-Uint32 get_pixel32(SDL_Surface *surface, int x, int y);
-SDL_Surface* load_surface(const char *filename);
-void render_projectiles(GameState *game_state, GLuint projectile_texture);
+Uint32 get_pixel32(SDL_Surface* surface, int x, int y);
+SDL_Surface* load_surface(const char* filename);
+void render_projectiles(GameState* game_state, GLuint projectile_texture);
 
 #endif // RENDER_H

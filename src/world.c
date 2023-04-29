@@ -12,7 +12,7 @@
 #include "world.h"
 #include "utils.h"
 
-Cell *cell_definitions;
+Cell* cell_definitions;
 int num_definitions;
 SDL_Surface* base_bg_texture;
 Cell default_cell;
@@ -20,7 +20,7 @@ Cell default_cell;
 const int CELL_XY_SCALE = 2;
 const int CELL_Z_SCALE = 4;
 
-bool load_world(World* world, const char *level_name) {
+bool load_world(World* world, const char* level_name) {
     DIR* dir;
     struct dirent* entry;
     int layer_count = 0;
@@ -117,9 +117,9 @@ void parse_layer_from_surface(SDL_Surface* surface, Layer* layer) {
     }
 }
 
-Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num_definitions) {
+Cell* get_cell_definition_from_color(SDL_Color color, Cell* definitions, int num_definitions) {
     for (int i = 0; i < num_definitions; i++) {
-        Cell *def = &definitions[i];
+        Cell* def = &definitions[i];
         if (color.r == def->color.r && color.g == def->color.g && color.b == def->color.b) {
             return def;
         }
@@ -128,15 +128,15 @@ Cell* get_cell_definition_from_color(SDL_Color color, Cell *definitions, int num
     return &default_cell;
 }
 
-Cell *read_cell_definitions(const char *filename, int *num_definitions) {
-    FILE *file = fopen(filename, "r");
+Cell* read_cell_definitions(const char* filename, int* num_definitions) {
+    FILE* file = fopen(filename, "r");
     if (file == NULL) {
         printf("Error: Cannot open cell definitions file: %s\n", filename);
         return NULL;
     }
 
     int capacity = 10;
-    Cell *definitions = (Cell *)malloc(capacity * sizeof(Cell));
+    Cell* definitions = (Cell *)malloc(capacity * sizeof(Cell));
     *num_definitions = 0;
     
     char line[256];
@@ -153,7 +153,7 @@ Cell *read_cell_definitions(const char *filename, int *num_definitions) {
         }
 
         // Read and process the line
-        Cell *def = &definitions[*num_definitions];
+        Cell* def = &definitions[*num_definitions];
         if (parse_cell_definition(line, def)) {
             // Increment the index only if the line was processed successfully
             (*num_definitions)++;
@@ -164,7 +164,7 @@ Cell *read_cell_definitions(const char *filename, int *num_definitions) {
     return definitions;
 }
 
-int parse_cell_definition(const char *line, Cell *def) {
+int parse_cell_definition(const char* line, Cell* def) {
     unsigned int r, g, b;
     char type_str[32];
     char c_str[32], f_str[32], w_str[32], name_str[64];
@@ -222,7 +222,7 @@ int parse_cell_definition(const char *line, Cell *def) {
     return 0;
 }
 
-bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, float *out_obstacle_z) {
+bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_pos, float* out_obstacle_z) {
     int z_layer = (int)(z_pos / CELL_Z_SCALE);
     if (z_layer >= world->num_layers) {
         return false;
@@ -231,11 +231,11 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
     int first_check_layer = z_layer >= 0 ? z_layer : 0; 
 
     for (int i = first_check_layer; i < world->num_layers; i++) {
-        Layer *layer = &world->layers[i];
+        Layer* layer = &world->layers[i];
         if (!is_within_xy_bounds(layer, cell_x, cell_y)) {
             continue;
         }
-        Cell *cell = get_cell(layer, cell_x, cell_y);
+        Cell* cell = get_cell(layer, cell_x, cell_y);
 
         //Check ceiling if they are below player
         if (z_pos < (float)i * CELL_Z_SCALE) {
@@ -257,7 +257,7 @@ bool get_next_z_obstacle(World *world, int cell_x, int cell_y, float z_pos, floa
     return false; // No obstacle found
 }
 
-CellInfo3D *get_cells_for_vector_3d(World *world, vec3 source, vec3 destination, int *num_cells) {
+CellInfo3D* get_cells_for_vector_3d(World* world, vec3 source, vec3 destination, int* num_cells) {
     assert(num_cells != NULL);
 
     // Allocate memory for the cell information array
@@ -321,7 +321,7 @@ CellInfo3D *get_cells_for_vector_3d(World *world, vec3 source, vec3 destination,
     return cell_infos;
 }
 
-CellInfo *get_cells_for_vector(Layer *layer, vec2 source, vec2 destination, int *num_cells) {
+CellInfo* get_cells_for_vector(Layer* layer, vec2 source, vec2 destination, int* num_cells) {
     assert(num_cells != NULL);
 
     // Allocate memory for the cell information array
@@ -345,7 +345,7 @@ CellInfo *get_cells_for_vector(Layer *layer, vec2 source, vec2 destination, int 
     while (1) {
         // Check if the cell is within the layer bounds
         if (x0 >= 0 && x0 < layer->width && y0 >= 0 && y0 < layer->height) {
-            Cell *cell = get_cell(layer, x0, y0);
+            Cell* cell = get_cell(layer, x0, y0);
             if (cell != NULL) {
                 // Add cell information to the array
                 cell_infos[*num_cells].cell = cell;
@@ -371,9 +371,9 @@ CellInfo *get_cells_for_vector(Layer *layer, vec2 source, vec2 destination, int 
     return cell_infos;
 }
 
-vec2 get_furthest_legal_position(Layer *layer, vec2 source, vec2 destination, float collision_buffer) {
+vec2 get_furthest_legal_position(Layer* layer, vec2 source, vec2 destination, float collision_buffer) {
     int num_cells;
-    CellInfo *cell_infos = get_cells_for_vector(layer, source, destination, &num_cells);
+    CellInfo* cell_infos = get_cells_for_vector(layer, source, destination, &num_cells);
 
     vec2 movement_vector = vec2_subtract(destination, source);
     float movement_length = vec2_length(movement_vector);
@@ -385,7 +385,7 @@ vec2 get_furthest_legal_position(Layer *layer, vec2 source, vec2 destination, fl
 
         for (int i = 0; i < num_cells; i++) {
             CellInfo cell_info = cell_infos[i];
-            Cell *cell = cell_info.cell;
+            Cell* cell = cell_info.cell;
             vec2 cell_position = cell_info.position;
 
             if (cell != NULL && cell->type == CELL_SOLID) {
@@ -407,26 +407,26 @@ vec2 get_furthest_legal_position(Layer *layer, vec2 source, vec2 destination, fl
     return source;
 }
 
-bool is_out_of_xy_bounds(Layer *layer, int x, int y) {
+bool is_out_of_xy_bounds(Layer* layer, int x, int y) {
     return x < 0 || x >= layer->width || y < 0 || y >= layer->height;
 }
 
-bool is_within_xy_bounds(Layer *layer, int x, int y) {
+bool is_within_xy_bounds(Layer* layer, int x, int y) {
     return x >= 0 && x < layer->width && y >= 0 && y < layer->height;
 }
 
-Cell *get_cell(Layer *layer, int x, int y) {
+Cell* get_cell(Layer* layer, int x, int y) {
     if (is_out_of_xy_bounds(layer, x, y)) {
         return NULL;
     }
     return &layer->cells[y][x];
 }
 
-bool get_world_cell(World *world, ivec3 grid_position, Cell** out_cell) {
+bool get_world_cell(World* world, ivec3 grid_position, Cell** out_cell) {
     if (grid_position.z < 0 || grid_position.z >= world->num_layers) {
         return false;
     }
-    Layer *layer = &world->layers[grid_position.z];
+    Layer* layer = &world->layers[grid_position.z];
     if (grid_position.y < 0 || grid_position.y >= layer->width || grid_position.x < 0 || grid_position.x >= layer->height) {
         return false;
     }

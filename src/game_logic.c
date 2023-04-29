@@ -9,7 +9,7 @@
 
 const float MOUSE_SENSITIVITY = 0.001f;
 
-static void calculate_projectile_direction(Player *player, vec3 *direction) {
+static void calculate_projectile_direction(Player* player, vec3* direction) {
     float forward_x = cosf(player->yaw) * cosf(player->pitch);
     float forward_y = sinf(player->yaw) * cosf(player->pitch);
     float forward_z = -sinf(player->pitch);
@@ -23,7 +23,7 @@ static void create_projectile(Projectile* projectiles, Player* player) {
     // Create a new projectile
     for (int i = 0; i < MAX_PROJECTILES; i++) {
         if (projectiles[i].ttl < 1) {
-            Projectile *proj = &projectiles[i];
+            Projectile* proj = &projectiles[i];
             proj->position = player->position;
             proj->speed = 20.0f;
             proj->size = 1.0f;
@@ -35,7 +35,7 @@ static void create_projectile(Projectile* projectiles, Player* player) {
     }
 }
 
-static void update_projectile(World *world, Projectile *projectile, float deltaTime) {
+static void update_projectile(World* world, Projectile* projectile, float deltaTime) {
     if (projectile->ttl < 1) {
         return;
     }
@@ -56,10 +56,10 @@ static void update_projectile(World *world, Projectile *projectile, float deltaT
     };
 
     int num_cells;
-    CellInfo3D *cell_infos = get_cells_for_vector_3d(world, old_pos, new_pos, &num_cells);
+    CellInfo3D* cell_infos = get_cells_for_vector_3d(world, old_pos, new_pos, &num_cells);
     for (int i = 0; i < num_cells; i++) {
         CellInfo3D cell_info = cell_infos[i];
-        Cell *cell = cell_info.cell;
+        Cell* cell = cell_info.cell;
         vec3 cell_position = cell_info.position;
 
         if (cell != NULL && cell->type == CELL_SOLID) {
@@ -70,7 +70,7 @@ static void update_projectile(World *world, Projectile *projectile, float deltaT
     projectile->position = new_pos;
 }
 
-static void update_player_position(Player *player, World *world, float dx, float dy, float deltaTime) {
+static void update_player_position(Player* player, World* world, float dx, float dy, float deltaTime) {
     // Handle free mode unrestricted movement
     if (player->free_mode) {
         player->position.x += dx * player->speed * deltaTime;
@@ -91,7 +91,7 @@ static void update_player_position(Player *player, World *world, float dx, float
     ivec3 target_grid_pos = get_grid_pos3(target_x, target_y, target_z);
 
     int z_layer = (int)floor(player->position.z / CELL_Z_SCALE);
-    Layer *layer = &world->layers[z_layer];
+    Layer* layer = &world->layers[z_layer];
 
     // Calculate the destination position
     vec2 source = {player->position.x, player->position.y};
@@ -143,7 +143,7 @@ static void update_player_position(Player *player, World *world, float dx, float
     }
 }
 
-static vec2 process_input(GameState *game_state, InputState *input_state) {
+static vec2 process_input(GameState* game_state, InputState* input_state) {
     vec2 movement = {0.0f, 0.0f};
 
     if (input_state->f.is_down && !input_state->f.was_down) {
@@ -184,7 +184,7 @@ static vec2 process_input(GameState *game_state, InputState *input_state) {
     return movement;
 }
 
-static void process_mouse(GameState *game_state, InputState *input_state) {
+static void process_mouse(GameState* game_state, InputState* input_state) {
     // Update player's yaw and pitch based on mouse input
     game_state->player.yaw += input_state->mouse_state.dx * MOUSE_SENSITIVITY;
     game_state->player.pitch -= input_state->mouse_state.dy * MOUSE_SENSITIVITY;
@@ -220,7 +220,7 @@ bool start_level(GameState* gamestate, const char* level) {
     return true;
 }
 
-void update(GameState *game_state, InputState *input_state) {
+void update(GameState* game_state, InputState* input_state) {
     vec2 movement = process_input(game_state, input_state);
     process_mouse(game_state, input_state);
         

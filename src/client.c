@@ -17,8 +17,8 @@
 static bool quit = false;
 const bool DEBUG_LOG = true;
 
-SDL_Window *window = NULL;
-SDL_Renderer *renderer = NULL;
+SDL_Window* window = NULL;
+SDL_Renderer* renderer = NULL;
 SDL_GLContext gl_context = NULL;
 SDL_Surface* base_fg_texture;
 
@@ -71,7 +71,7 @@ bool init_engine() {
     return true;
 }
 
-ButtonState get_mouse_button_state(uint32_t button, const InputState *prev_input_state) {
+ButtonState get_mouse_button_state(uint32_t button, InputState* prev_input_state) {
     ButtonState result = {0};
     int is_down = SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(button);
     result.was_down = prev_input_state->mouse_button_1.is_down;
@@ -79,12 +79,12 @@ ButtonState get_mouse_button_state(uint32_t button, const InputState *prev_input
     return result;
 }
 
-InputState process_input(InputState *previous_input_state, float deltaTime) {
+InputState process_input(InputState* previous_input_state, float deltaTime) {
     SDL_Event event;
     InputState new_input_state = *previous_input_state;
 
     // Process keyboard input
-    const Uint8 *state = SDL_GetKeyboardState(NULL);
+    const Uint8* state = SDL_GetKeyboardState(NULL);
 
     new_input_state.esc.was_down = new_input_state.esc.is_down;
     new_input_state.esc.is_down = state[SDL_SCANCODE_ESCAPE];
@@ -182,7 +182,7 @@ void cleanup_engine() {
     SDL_Quit();
 }
 
-void play_sounds(GameState *game_state) {
+void play_sounds(GameState* game_state) {
     if (game_state->player.jumped) {
         audio_play_sound(sound_jump, 0.2f);
         game_state->player.jumped = false;

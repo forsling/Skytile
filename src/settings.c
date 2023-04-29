@@ -14,7 +14,7 @@ typedef struct {
 static KeyValuePair settings_array[MAX_SETTINGS];
 static size_t settings_count = 0;
 
-static Setting *find_setting(const char *key) {
+static Setting* find_setting(const char* key) {
     for (size_t i = 0; i < settings_count; ++i) {
         if (strcmp(settings_array[i].key, key) == 0) {
             return &settings_array[i].setting;
@@ -23,10 +23,10 @@ static Setting *find_setting(const char *key) {
     return NULL;
 }
 
-bool load_settings(const char *file_name) {
+bool load_settings(const char* file_name) {
     initialize_default_settings();
 
-    FILE *file = fopen(file_name, "r");
+    FILE* file = fopen(file_name, "r");
     if (!file) {
         if (errno == ENOENT) {
             fprintf(stderr, "Warning: Settings file not found, creating with default values: %s\n", file_name);
@@ -70,17 +70,17 @@ bool load_settings(const char *file_name) {
     return true;
 }
 
-void write_settings(const char *file_name) {
-    FILE *file = fopen(file_name, "w");
+void write_settings(const char* file_name) {
+    FILE* file = fopen(file_name, "w");
     if (!file) {
         fprintf(stderr, "Error: Could not open settings file for writing: %s\n", file_name);
         return;
     }
 
     for (int i = 0; i < settings_count; ++i) {
-        const char *type_str;
-        const char *key = settings_array[i].key;
-        Setting *setting = &settings_array[i].setting;
+        const char* type_str;
+        const char* key = settings_array[i].key;
+        Setting* setting = &settings_array[i].setting;
         switch (setting->type) {
             case SETTING_TYPE_INT:
                 type_str = "int";
@@ -119,9 +119,9 @@ void initialize_default_settings() {
     set_setting("master_volume", SETTING_TYPE_FLOAT, "1.0f");
 }
 
-void set_setting(const char *key, SettingType type, const char *value_str) {
+void set_setting(const char* key, SettingType type, const char* value_str) {
     // Try to find the setting
-    Setting *setting = find_setting(key);
+    Setting* setting = find_setting(key);
 
     // If the setting doesn't exist, add it
     if (!setting) {
@@ -129,7 +129,7 @@ void set_setting(const char *key, SettingType type, const char *value_str) {
             return;
         }
 
-        KeyValuePair *kv = &settings_array[settings_count++];
+        KeyValuePair* kv = &settings_array[settings_count++];
         strncpy(kv->key, key, MAX_LINE_LENGTH);
         kv->setting.type = type;
         setting = &kv->setting;
@@ -157,8 +157,8 @@ void set_setting(const char *key, SettingType type, const char *value_str) {
     }
 }
 
-int get_setting_int(const char *key) {
-    Setting *setting = find_setting(key);
+int get_setting_int(const char* key) {
+    Setting* setting = find_setting(key);
     if (setting && setting->type == SETTING_TYPE_INT) {
         return setting->value.int_value;
     }
@@ -169,8 +169,8 @@ int get_setting_int(const char *key) {
     return 0;
 }
 
-float get_setting_float(const char *key) {
-    Setting *setting = find_setting(key);
+float get_setting_float(const char* key) {
+    Setting* setting = find_setting(key);
     if (setting && setting->type == SETTING_TYPE_FLOAT) {
         return setting->value.float_value;
     }
@@ -181,8 +181,8 @@ float get_setting_float(const char *key) {
     return 0.0f;
 }
 
-const char *get_setting_string(const char *key) {
-    Setting *setting = find_setting(key);
+const char* get_setting_string(const char* key) {
+    Setting* setting = find_setting(key);
     if (setting && setting->type == SETTING_TYPE_STRING) {
         return setting->value.string_value;
     }
@@ -193,8 +193,8 @@ const char *get_setting_string(const char *key) {
     return NULL;
 }
 
-bool get_setting_bool(const char *key) {
-    Setting *setting = find_setting(key);
+bool get_setting_bool(const char* key) {
+    Setting* setting = find_setting(key);
     if (setting && setting->type == SETTING_TYPE_BOOL) {
         return setting->value.int_value != 0;
     }
