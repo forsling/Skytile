@@ -10,148 +10,110 @@
 
 const float MOUSE_SENSITIVITY = 0.001f;
 
-static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_pos, float* out_obstacle_z) {
-    int z_layer = (int)(z_pos / CELL_Z_SCALE);
-    if (z_layer >= world->num_layers) {
+static vec2 process_input(GameState* game_state, InputState* input_state);
+static void process_mouse(GameState* game_state, InputState* input_state);
+
+static void calculate_projectile_direction(Player* player, vec3* direction);
+static void create_projectile(Projectile* projectiles, Player* player);
+static void update_projectile(World* world, Projectile* projectile, float deltaTime);
+
+static void update_player_position(Player* player, World* world, float dx, float dy, float deltaTime);
+static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_pos, float* out_obstacle_z);
+static CellInfo* get_cells_for_vector(World* world, vec3 source, vec3 destination, int* num_cells);
+static vec3 get_furthest_legal_position(World* world, vec3 source, vec3 destination, float collision_buffer);
+
+bool start_level(GameState* gamestate, const char* level) {
+    // Initialize player object
+    Player player = {0};
+    player.position.x = get_setting_float("player_pos_x");
+    player.position.y = get_setting_float("player_pos_y");
+    player.position.z = get_setting_float("player_pos_z");
+    player.height = CELL_Z_SCALE / 2;
+    player.speed = 10.0f;
+    player.jump_velocity = -8.0f;
+    player.size = 0.3f * CELL_XY_SCALE;
+    gamestate->player = player;
+
+    gamestate->delta_time = 0.0f;
+
+    memset(gamestate->projectiles, 0, sizeof(gamestate->projectiles));
+
+    if (!load_world(&gamestate->world, level)) {
+        printf("Failed to load world.\n");
         return false;
     }
-
-    int first_check_layer = z_layer >= 0 ? z_layer : 0; 
-
-    for (int i = first_check_layer; i < world->num_layers; i++) {
-        Layer* layer = &world->layers[i];
-        if (!is_within_xy_bounds(layer, cell_x, cell_y)) {
-            continue;
-        }
-        Cell* cell = get_cell(layer, cell_x, cell_y);
-
-        //Check ceiling if they are below player
-        if (z_pos < (float)i * CELL_Z_SCALE) {
-            if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
-                *out_obstacle_z = (float)i * CELL_Z_SCALE;
-                //debuglog(1, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
-                return true;
-            }
-        }
-
-        //Check floors
-        if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
-            *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
-            //debuglog(1, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
-            return true;
-        }
-    }
-
-    return false; // No obstacle found
+    return true;
 }
 
-static CellInfo* get_cells_for_vector(World* world, vec3 source, vec3 destination, int* num_cells) {
-    assert(num_cells != NULL);
+void update(GameState* game_state, InputState* input_state) {
+    vec2 movement = process_input(game_state, input_state);
+    process_mouse(game_state, input_state);
+        
+    update_player_position(&game_state->player, &game_state->world, movement.x, movement.y, game_state->delta_time);
 
-    // Allocate memory for the cell information array
-    static CellInfo cell_infos[MAX_CELLS];
-    *num_cells = 0;
-
-    // Convert source and destination to cell coordinates
-    int x0 = (int)(source.x / CELL_XY_SCALE);
-    int y0 = (int)(source.y / CELL_XY_SCALE);
-    int z0 = (int)(source.z / CELL_Z_SCALE);
-    int x1 = (int)(destination.x / CELL_XY_SCALE);
-    int y1 = (int)(destination.y / CELL_XY_SCALE);
-    int z1 = (int)(destination.z / CELL_Z_SCALE);
-
-    // Bresenham's line algorithm in 3D
-    int dx = abs(x1 - x0);
-    int dy = abs(y1 - y0);
-    int dz = abs(z1 - z0);
-    int sx = (x0 < x1) ? 1 : -1;
-    int sy = (y0 < y1) ? 1 : -1;
-    int sz = (z0 < z1) ? 1 : -1;
-
-    int dm = MAX(dx, MAX(dy, dz));
-    int i;
-    for (i = dm * 2; i > 0; i--) {
-        // Check if the cell is within the world bounds
-        if (x0 >= 0 && x0 < world->layers[0].width &&
-            y0 >= 0 && y0 < world->layers[0].height &&
-            z0 >= 0 && z0 < world->num_layers) {
-            Cell* cell;
-            if (get_world_cell(world, (ivec3){x0, y0, z0}, &cell)) {
-                // Add cell information to the array
-                cell_infos[*num_cells].cell = cell;
-                cell_infos[*num_cells].position = (vec3){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE, z0 * CELL_Z_SCALE};
-                (*num_cells)++;
-            }
-        }
-
-        if (x0 == x1 && y0 == y1 && z0 == z1) {
-            break;
-        }
-
-        int x_err = 2 * abs(dm - dx);
-        int y_err = 2 * abs(dm - dy);
-        int z_err = 2 * abs(dm - dz);
-
-        if (x_err <= dm) {
-            dm -= dx;
-            x0 += sx;
-        }
-        if (y_err <= dm) {
-            dm -= dy;
-            y0 += sy;
-        }
-        if (z_err <= dm) {
-            dm -= dz;
-            z0 += sz;
-        }
+    // Update projectiles
+    for (int i = 0; i < MAX_PROJECTILES; i++) {
+        update_projectile(&game_state->world, &game_state->projectiles[i], game_state->delta_time);
     }
 
-    return cell_infos;
+    if (input_state->mouse_button_1.is_down && !input_state->mouse_button_1.was_down) {
+        create_projectile(game_state->projectiles, &game_state->player);
+    }
 }
 
-static vec3 get_furthest_legal_position(World* world, vec3 source, vec3 destination, float collision_buffer) {
-    int num_cells;
-    CellInfo* cell_infos = get_cells_for_vector(world, source, destination, &num_cells);
-    vec3 movement_vector = vec3_subtract(destination, source);
-    float movement_length = vec3_length(movement_vector);
-    vec3 movement_unit_vector = vec3_normalize(movement_vector);
 
-    for (float distance = movement_length; distance >= 0.0f; distance -= collision_buffer) {
-        vec3 candidate_position = vec3_add(source, vec3_multiply_scalar(movement_unit_vector, distance));
-        bool is_valid = true;
+static vec2 process_input(GameState* game_state, InputState* input_state) {
+    vec2 movement = {0.0f, 0.0f};
 
-        for (int i = 0; i < num_cells; i++) {
-            CellInfo cell_info = cell_infos[i];
-            Cell* cell = cell_info.cell;
-            vec3 cell_position = cell_info.position;
-
-            if (cell != NULL && cell->type == CELL_SOLID) {
-                float distance_to_cell = point_to_aabb_distance_3d(candidate_position.x, candidate_position.y, candidate_position.z,
-                                                                cell_position.x, cell_position.y, cell_position.z,
-                                                                cell_position.x + CELL_XY_SCALE, cell_position.y + CELL_XY_SCALE, cell_position.z + CELL_Z_SCALE);
-                if (distance_to_cell <= collision_buffer) {
-                    is_valid = false;
-                    break;
-                }
-            }
-        }
-
-        if (is_valid) {
-            return candidate_position;
-        }
+    if (input_state->f.is_down && !input_state->f.was_down) {
+        // Toggle free mode
+        game_state->player.free_mode = !game_state->player.free_mode;
     }
 
-    return source;
+    if (input_state->up.is_down) {
+        movement.x += cosf(game_state->player.yaw);
+        movement.y += sinf(game_state->player.yaw);
+    }
+    if (input_state->down.is_down) {
+        movement.x -= cosf(game_state->player.yaw);
+        movement.y -= sinf(game_state->player.yaw);
+    }
+    if (input_state->right.is_down) {
+        movement.x -= sinf(game_state->player.yaw);
+        movement.y += cosf(game_state->player.yaw);
+    }
+    if (input_state->left.is_down) {
+        movement.x += sinf(game_state->player.yaw);
+        movement.y -= cosf(game_state->player.yaw);
+    }
+
+    // Handle jumping and free mode
+    if (input_state->space.is_down) {
+        if (game_state->player.free_mode) {
+            game_state->player.position.z -= game_state->player.speed * game_state->delta_time;
+        } else if (game_state->player.velocity_z == 0.0f) { // Jump only when the player is on the ground
+            game_state->player.velocity_z = game_state->player.jump_velocity;
+            game_state->player.jumped = true;
+        }
+    }
+    if (game_state->player.free_mode && input_state->shift.is_down) {
+        game_state->player.position.z += game_state->player.speed * game_state->delta_time;
+    }
+
+    return movement;
 }
 
-static void calculate_projectile_direction(Player* player, vec3* direction) {
-    float forward_x = cosf(player->yaw) * cosf(player->pitch);
-    float forward_y = sinf(player->yaw) * cosf(player->pitch);
-    float forward_z = -sinf(player->pitch);
+static void process_mouse(GameState* game_state, InputState* input_state) {
+    // Update player's yaw and pitch based on mouse input
+    game_state->player.yaw += input_state->mouse_state.dx * MOUSE_SENSITIVITY;
+    game_state->player.pitch -= input_state->mouse_state.dy * MOUSE_SENSITIVITY;
 
-    direction->x = forward_x;
-    direction->y = forward_y;
-    direction->z = forward_z;
+    if (game_state->player.pitch < -M_PI / 2) {
+        game_state->player.pitch = -M_PI / 2;
+    }
+    if (game_state->player.pitch > M_PI / 2) {
+        game_state->player.pitch = M_PI / 2;
+    }
 }
 
 static void create_projectile(Projectile* projectiles, Player* player) {
@@ -168,6 +130,16 @@ static void create_projectile(Projectile* projectiles, Player* player) {
             break;
         }
     }
+}
+
+static void calculate_projectile_direction(Player* player, vec3* direction) {
+    float forward_x = cosf(player->yaw) * cosf(player->pitch);
+    float forward_y = sinf(player->yaw) * cosf(player->pitch);
+    float forward_z = -sinf(player->pitch);
+
+    direction->x = forward_x;
+    direction->y = forward_y;
+    direction->z = forward_z;
 }
 
 static void update_projectile(World* world, Projectile* projectile, float deltaTime) {
@@ -279,96 +251,136 @@ static void update_player_position(Player* player, World* world, float dx, float
     }
 }
 
-static vec2 process_input(GameState* game_state, InputState* input_state) {
-    vec2 movement = {0.0f, 0.0f};
+static vec3 get_furthest_legal_position(World* world, vec3 source, vec3 destination, float collision_buffer) {
+    int num_cells;
+    CellInfo* cell_infos = get_cells_for_vector(world, source, destination, &num_cells);
+    vec3 movement_vector = vec3_subtract(destination, source);
+    float movement_length = vec3_length(movement_vector);
+    vec3 movement_unit_vector = vec3_normalize(movement_vector);
 
-    if (input_state->f.is_down && !input_state->f.was_down) {
-        // Toggle free mode
-        game_state->player.free_mode = !game_state->player.free_mode;
-    }
+    for (float distance = movement_length; distance >= 0.0f; distance -= collision_buffer) {
+        vec3 candidate_position = vec3_add(source, vec3_multiply_scalar(movement_unit_vector, distance));
+        bool is_valid = true;
 
-    if (input_state->up.is_down) {
-        movement.x += cosf(game_state->player.yaw);
-        movement.y += sinf(game_state->player.yaw);
-    }
-    if (input_state->down.is_down) {
-        movement.x -= cosf(game_state->player.yaw);
-        movement.y -= sinf(game_state->player.yaw);
-    }
-    if (input_state->right.is_down) {
-        movement.x -= sinf(game_state->player.yaw);
-        movement.y += cosf(game_state->player.yaw);
-    }
-    if (input_state->left.is_down) {
-        movement.x += sinf(game_state->player.yaw);
-        movement.y -= cosf(game_state->player.yaw);
-    }
+        for (int i = 0; i < num_cells; i++) {
+            CellInfo cell_info = cell_infos[i];
+            Cell* cell = cell_info.cell;
+            vec3 cell_position = cell_info.position;
 
-    // Handle jumping and free mode
-    if (input_state->space.is_down) {
-        if (game_state->player.free_mode) {
-            game_state->player.position.z -= game_state->player.speed * game_state->delta_time;
-        } else if (game_state->player.velocity_z == 0.0f) { // Jump only when the player is on the ground
-            game_state->player.velocity_z = game_state->player.jump_velocity;
-            game_state->player.jumped = true;
+            if (cell != NULL && cell->type == CELL_SOLID) {
+                float distance_to_cell = point_to_aabb_distance_3d(candidate_position.x, candidate_position.y, candidate_position.z,
+                                                                cell_position.x, cell_position.y, cell_position.z,
+                                                                cell_position.x + CELL_XY_SCALE, cell_position.y + CELL_XY_SCALE, cell_position.z + CELL_Z_SCALE);
+                if (distance_to_cell <= collision_buffer) {
+                    is_valid = false;
+                    break;
+                }
+            }
+        }
+
+        if (is_valid) {
+            return candidate_position;
         }
     }
-    if (game_state->player.free_mode && input_state->shift.is_down) {
-        game_state->player.position.z += game_state->player.speed * game_state->delta_time;
-    }
 
-    return movement;
+    return source;
 }
 
-static void process_mouse(GameState* game_state, InputState* input_state) {
-    // Update player's yaw and pitch based on mouse input
-    game_state->player.yaw += input_state->mouse_state.dx * MOUSE_SENSITIVITY;
-    game_state->player.pitch -= input_state->mouse_state.dy * MOUSE_SENSITIVITY;
+static CellInfo* get_cells_for_vector(World* world, vec3 source, vec3 destination, int* num_cells) {
+    assert(num_cells != NULL);
 
-    if (game_state->player.pitch < -M_PI / 2) {
-        game_state->player.pitch = -M_PI / 2;
+    // Allocate memory for the cell information array
+    static CellInfo cell_infos[MAX_CELLS];
+    *num_cells = 0;
+
+    // Convert source and destination to cell coordinates
+    int x0 = (int)(source.x / CELL_XY_SCALE);
+    int y0 = (int)(source.y / CELL_XY_SCALE);
+    int z0 = (int)(source.z / CELL_Z_SCALE);
+    int x1 = (int)(destination.x / CELL_XY_SCALE);
+    int y1 = (int)(destination.y / CELL_XY_SCALE);
+    int z1 = (int)(destination.z / CELL_Z_SCALE);
+
+    // Bresenham's line algorithm in 3D
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    int dz = abs(z1 - z0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int sz = (z0 < z1) ? 1 : -1;
+
+    int dm = MAX(dx, MAX(dy, dz));
+    int i;
+    for (i = dm * 2; i > 0; i--) {
+        // Check if the cell is within the world bounds
+        if (x0 >= 0 && x0 < world->layers[0].width &&
+            y0 >= 0 && y0 < world->layers[0].height &&
+            z0 >= 0 && z0 < world->num_layers) {
+            Cell* cell;
+            if (get_world_cell(world, (ivec3){x0, y0, z0}, &cell)) {
+                // Add cell information to the array
+                cell_infos[*num_cells].cell = cell;
+                cell_infos[*num_cells].position = (vec3){x0 * CELL_XY_SCALE, y0 * CELL_XY_SCALE, z0 * CELL_Z_SCALE};
+                (*num_cells)++;
+            }
+        }
+
+        if (x0 == x1 && y0 == y1 && z0 == z1) {
+            break;
+        }
+
+        int x_err = 2 * abs(dm - dx);
+        int y_err = 2 * abs(dm - dy);
+        int z_err = 2 * abs(dm - dz);
+
+        if (x_err <= dm) {
+            dm -= dx;
+            x0 += sx;
+        }
+        if (y_err <= dm) {
+            dm -= dy;
+            y0 += sy;
+        }
+        if (z_err <= dm) {
+            dm -= dz;
+            z0 += sz;
+        }
     }
-    if (game_state->player.pitch > M_PI / 2) {
-        game_state->player.pitch = M_PI / 2;
-    }
+
+    return cell_infos;
 }
 
-bool start_level(GameState* gamestate, const char* level) {
-    // Initialize player object
-    Player player = {0};
-    player.position.x = get_setting_float("player_pos_x");
-    player.position.y = get_setting_float("player_pos_y");
-    player.position.z = get_setting_float("player_pos_z");
-    player.height = CELL_Z_SCALE / 2;
-    player.speed = 10.0f;
-    player.jump_velocity = -8.0f;
-    player.size = 0.3f * CELL_XY_SCALE;
-    gamestate->player = player;
-
-    gamestate->delta_time = 0.0f;
-
-    memset(gamestate->projectiles, 0, sizeof(gamestate->projectiles));
-
-    if (!load_world(&gamestate->world, level)) {
-        printf("Failed to load world.\n");
+static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_pos, float* out_obstacle_z) {
+    int z_layer = (int)(z_pos / CELL_Z_SCALE);
+    if (z_layer >= world->num_layers) {
         return false;
     }
-    return true;
-}
 
-void update(GameState* game_state, InputState* input_state) {
-    vec2 movement = process_input(game_state, input_state);
-    process_mouse(game_state, input_state);
-        
-    update_player_position(&game_state->player, &game_state->world, movement.x, movement.y, game_state->delta_time);
+    int first_check_layer = z_layer >= 0 ? z_layer : 0; 
 
+    for (int i = first_check_layer; i < world->num_layers; i++) {
+        Layer* layer = &world->layers[i];
+        if (!is_within_xy_bounds(layer, cell_x, cell_y)) {
+            continue;
+        }
+        Cell* cell = get_cell(layer, cell_x, cell_y);
 
-    // Update projectiles
-    for (int i = 0; i < MAX_PROJECTILES; i++) {
-        update_projectile(&game_state->world, &game_state->projectiles[i], game_state->delta_time);
+        //Check ceiling if they are below player
+        if (z_pos < (float)i * CELL_Z_SCALE) {
+            if (cell->ceiling_texture != 0 ||  (cell->type == CELL_SOLID)) {
+                *out_obstacle_z = (float)i * CELL_Z_SCALE;
+                //debuglog(1, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
+                return true;
+            }
+        }
+
+        //Check floors
+        if (cell->floor_texture != 0 ||  (cell->type == CELL_SOLID)) {
+            *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
+            //debuglog(1, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
+            return true;
+        }
     }
 
-    if (input_state->mouse_button_1.is_down && !input_state->mouse_button_1.was_down) {
-        create_projectile(game_state->projectiles, &game_state->player);
-    }
+    return false; // No obstacle found
 }
