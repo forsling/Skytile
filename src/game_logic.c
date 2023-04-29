@@ -94,14 +94,15 @@ static void update_player_position(Player* player, World* world, float dx, float
     Layer* layer = &world->layers[z_layer];
 
     // Calculate the destination position
-    vec2 source = {player->position.x, player->position.y};
-    vec2 destination = {target_x, target_y};
+    vec3 source = {player->position.x, player->position.y, player->position.z};
+    vec3 destination = {target_x, target_y, target_z};
 
     // Update the player's position based on the furthest legal position
     if (z_layer >= 0) {
-        vec2 furthest_legal_position = get_furthest_legal_position(layer, source, destination, player->size);
+        vec3 furthest_legal_position = get_furthest_legal_position_3d(world, source, destination, player->size);
         target_x = furthest_legal_position.x;
         target_y = furthest_legal_position.y;
+        target_z = furthest_legal_position.z;
     }
 
     // z-axis handling

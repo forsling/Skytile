@@ -371,6 +371,41 @@ CellInfo* get_cells_for_vector(Layer* layer, vec2 source, vec2 destination, int*
     return cell_infos;
 }
 
+vec3 get_furthest_legal_position_3d(World* world, vec3 source, vec3 destination, float collision_buffer) {
+    int num_cells;
+    CellInfo3D* cell_infos = get_cells_for_vector_3d(world, source, destination, &num_cells);
+    vec3 movement_vector = vec3_subtract(destination, source);
+    float movement_length = vec3_length(movement_vector);
+    vec3 movement_unit_vector = vec3_normalize(movement_vector);
+
+    for (float distance = movement_length; distance >= 0.0f; distance -= collision_buffer) {
+        vec3 candidate_position = vec3_add(source, vec3_multiply_scalar(movement_unit_vector, distance));
+        bool is_valid = true;
+
+        for (int i = 0; i < num_cells; i++) {
+            CellInfo3D cell_info = cell_infos[i];
+            Cell* cell = cell_info.cell;
+            vec3 cell_position = cell_info.position;
+
+            if (cell != NULL && cell->type == CELL_SOLID) {
+                float distance_to_cell = point_to_aabb_distance_3d(candidate_position.x, candidate_position.y, candidate_position.z,
+                                                                cell_position.x, cell_position.y, cell_position.z,
+                                                                cell_position.x + CELL_XY_SCALE, cell_position.y + CELL_XY_SCALE, cell_position.z + CELL_Z_SCALE);
+                if (distance_to_cell <= collision_buffer) {
+                    is_valid = false;
+                    break;
+                }
+            }
+        }
+
+        if (is_valid) {
+            return candidate_position;
+        }
+    }
+
+    return source;
+}
+
 vec2 get_furthest_legal_position(Layer* layer, vec2 source, vec2 destination, float collision_buffer) {
     int num_cells;
     CellInfo* cell_infos = get_cells_for_vector(layer, source, destination, &num_cells);

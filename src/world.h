@@ -54,6 +54,7 @@ Cell* get_cell_definition_from_color(SDL_Color color, Cell* definitions, int num
 Cell* read_cell_definitions(const char* filename, int* num_definitions);
 CellInfo* get_cells_for_vector(Layer* layer, vec2 source, vec2 destination, int* num_cells);
 vec2 get_furthest_legal_position(Layer* layer, vec2 source, vec2 destination, float collision_buffer);
+vec3 get_furthest_legal_position_3d(World* world, vec3 source, vec3 destination, float collision_buffer);
 bool is_out_of_xy_bounds(Layer* layer, int x, int y);
 bool is_within_xy_bounds(Layer* layer, int x, int y);
 bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_pos, float* out_obstacle_z);
