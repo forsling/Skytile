@@ -10,6 +10,7 @@
         "${workspaceFolder}/src/main.c",
         "${workspaceFolder}/src/client.c",
         "${workspaceFolder}/src/game_logic.c",
+        "${workspaceFolder}/src/texture.c",
         "${workspaceFolder}/src/world.c",
         "${workspaceFolder}/src/render.c",
         "${workspaceFolder}/src/audio.c",

@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!load_settings("server.txt")) {
+    if (!load_settings("server.txt", true)) {
         fprintf(stderr, "Failed to load settings\n");
         return 1;
     }

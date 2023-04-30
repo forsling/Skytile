@@ -1,17 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "texture_handler.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
+
+#include "texture.h"
 
 #define HASH_TABLE_SIZE 256
 
-static TextureNode* texture_hash_table[HASH_TABLE_SIZE] = {0};
+static TextureNode* hash_table[HASH_TABLE_SIZE] = {0};
 static SDL_Surface* texture_atlas = NULL;
 
-static GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height);
 static unsigned int color_hash(SDL_Color color);
 static void add_texture_info(SDL_Color color, TextureInfo info);
-static int parse_cell_definition(const char* line);
+static int load_cell_definitions(const char* line);
 
 void init_texture_handler(const char* cell_definitions_path, SDL_Surface* atlas) {
     texture_atlas = atlas;
@@ -28,7 +30,7 @@ void init_texture_handler(const char* cell_definitions_path, SDL_Surface* atlas)
             continue; // Skip comments and empty lines
         }
 
-        if (!parse_cell_definition(line)) {
+        if (!load_cell_definitions(line)) {
             printf("Error: Invalid cell definition: %s\n", line);
         }
     }
@@ -36,32 +38,6 @@ void init_texture_handler(const char* cell_definitions_path, SDL_Surface* atlas)
     fclose(file);
 }
 
-TextureInfo* get_texture_info(SDL_Color color) {
-    unsigned int index = color_hash(color);
-    TextureNode* node = texture_hash_table[index];
-
-    while (node) {
-        if (node->color.r == color.r && node->color.g == color.g && node->color.b == color.b) {
-            return &node->info;
-        }
-        node = node->next;
-    }
-
-    return NULL;
-}
-
-void free_texture_handler() {
-    for (int i = 0; i < HASH_TABLE_SIZE; ++i) {
-        TextureNode* node = texture_hash_table[i];
-        while (node) {
-            TextureNode* next_node = node->next;
-            free(node);
-            node = next_node;
-        }
-    }
-}
-
-// Function to create a GLuint texture from a sub-region of the given SDL_Surface
 GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height) {
     if (!image) {
         printf("Error: Invalid SDL_Surface\n");
@@ -97,22 +73,50 @@ GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height) {
     return texture;
 }
 
+static int hash(SDL_Color color) {
+    return (color.r ^ color.g ^ color.b) % HASH_TABLE_SIZE;
+}
+
+static void add_texture_info(SDL_Color color, TextureInfo info) {
+    int index = hash(color);
+
+    TextureNode* new_node = (TextureNode*)malloc(sizeof(TextureNode));
+    new_node->color = color;
+    new_node->texture_info = info;
+    new_node->next = hash_table[index];
+    hash_table[index] = new_node;
+}
+
+TextureInfo* get_texture_info(SDL_Color color) {
+    int index = hash(color);
+    TextureNode* node = hash_table[index];
+
+    while (node) {
+        if (SDL_memcmp(&color, &node->color, sizeof(SDL_Color)) == 0) {
+            return &node->texture_info;
+        }
+        node = node->next;
+    }
+
+    return NULL;
+}
+
+void free_texture_handler() {
+    for (int i = 0; i < HASH_TABLE_SIZE; ++i) {
+        TextureNode* node = hash_table[i];
+        while (node) {
+            TextureNode* next_node = node->next;
+            free(node);
+            node = next_node;
+        }
+    }
+}
+
 unsigned int color_hash(SDL_Color color) {
     return (color.r * 31 + color.g) * 31 + color.b;
 }
 
-void add_texture_info(SDL_Color color, TextureInfo info) {
-    unsigned int index = color_hash(color);
-    TextureNode* new_node = (TextureNode*)malloc(sizeof(TextureNode));
-
-    new_node->color = color;
-    new_node->info = info;
-    new_node->next = texture_hash_table[index];
-
-    texture_hash_table[index] = new_node;
-}
-
-int parse_cell_definition(const char* line) {
+static int load_cell_definitions(const char* line) {
     unsigned int r, g, b;
     char type_str[32];
     char c_str[32], f_str[32], w_str[32], name_str[64];

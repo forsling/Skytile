@@ -8,6 +8,7 @@
 #include "world.h"
 #include "settings.h"
 #include "game_logic.h"
+#include "texture.h"
 
 void init_opengl() {
     // Set swap interval for Vsync
@@ -115,29 +116,31 @@ void render_world(World* world, Player* player) {
                     get_cell(layer, x + 0, y + 1),
                     get_cell(layer, x + 0, y - 1)
                 };
+                TextureInfo* cell_texture_info = get_texture_info(cell->color);
 
                 // Render floors
-                if (cell->floor_texture != 0) {
-                    render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, cell->floor_texture);
+                if (cell->type != CELL_VOID) {
+                    render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, cell_texture_info->floor_texture);
                 }
 
                 // Render ceilings
-                if (cell->ceiling_texture != 0) {
-                    render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, cell->ceiling_texture);
+                if (cell->type == CELL_SOLID || cell->type == CELL_ROOM) {
+                    render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, cell_texture_info->ceiling_texture);
                 }
                 
                 for (int i = 0; i < 4; ++i) {
                     Cell* neighbor = neighbors[i];
-                    if (cell->type == CELL_OPEN && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0) {
+                    // Get texture info for the neighboring cell
+                    TextureInfo* neighbor_texture_info = neighbor ? get_texture_info(neighbor->color) : NULL;
+
+                    if (cell->type != CELL_SOLID && neighbor != NULL && neighbor->type == CELL_SOLID) {
                         //Render walls for adjacent solid blocks
-                        render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_Z_SCALE, neighbor_dirs[i], neighbor->wall_texture);
+                        render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_Z_SCALE, neighbor_dirs[i], neighbor_texture_info->wall_texture);
 
                     } else if (cell->type == CELL_SOLID) {
-                        //Render walls when untextured solid blocks borders textured solid blocks
-                        bool isSolidEdgeBlock = (cell->wall_texture != 0 && neighbor == NULL);
-                        bool isTransparentSolidWithSolidNeighbor = (cell->wall_texture == 0 && neighbor != NULL && neighbor->type == CELL_SOLID && neighbor->wall_texture != 0);
-                        if (isSolidEdgeBlock || isTransparentSolidWithSolidNeighbor) {
-                            GLuint wall_texture = isSolidEdgeBlock ? cell->wall_texture : neighbor->wall_texture;
+                        //Render walls at the world edge
+                        if (neighbor == NULL) {
+                            GLuint wall_texture = cell_texture_info->wall_texture;
                             render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_Z_SCALE, neighbor_dirs[i], wall_texture);
                         }
                     }

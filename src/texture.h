@@ -2,9 +2,9 @@
 #define TEXTURE_HANDLER_H
 
 #include <SDL2/SDL.h>
-#include "cell.h"
+#include "world.h"
 
-typedef struct {
+typedef struct TextureInfo {
     GLuint floor_texture;
     GLuint ceiling_texture;
     GLuint wall_texture;
@@ -12,7 +12,7 @@ typedef struct {
 
 typedef struct TextureNode {
     SDL_Color color;
-    TextureInfo info;
+    TextureInfo texture_info;
     struct TextureNode* next;
 } TextureNode;
 

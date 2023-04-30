@@ -15,6 +15,7 @@
 #include "audio.h"
 #include "settings.h"
 #include "game_logic.h"
+#include "texture.h"
 
 static bool quit = false;
 const bool DEBUG_LOG = true;
@@ -23,6 +24,7 @@ SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_GLContext gl_context = NULL;
 SDL_Surface* base_fg_texture;
+SDL_Surface* base_bg_texture;
 
 #define MAX_TEXTURES 128
 TextureInfo texture_map[MAX_TEXTURES];
@@ -159,6 +161,7 @@ InputState process_input(InputState* previous_input_state, float deltaTime) {
 
 bool load_engine_assets(GameState* gamestate) {
     base_fg_texture = load_surface("assets/fg.png");
+    base_bg_texture = load_surface("assets/fg.png");
     projectile_texture = create_texture(base_fg_texture, 1088, 192, 32, 32);
 
     sound_jump = audio_load_sound("assets/jump1.wav");
@@ -206,6 +209,9 @@ void main_loop() {
 
     const char* SERVER_HOSTNAME = "127.0.0.1";
     const Uint16 SERVER_PORT = 12345;
+
+    // Set up texture handler
+    init_texture_handler("cell_definitions.txt", base_bg_texture);
 
     // Connect to the server
     IPaddress server_ip;

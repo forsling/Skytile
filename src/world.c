@@ -13,7 +13,6 @@
 
 Cell* cell_definitions;
 int num_definitions;
-SDL_Surface* base_bg_texture;
 Cell default_cell;
 
 const int CELL_XY_SCALE = 2;
@@ -37,8 +36,6 @@ bool load_world(World* world, const char* level_name) {
             layer_count++;
         }
     }
-
-    base_bg_texture = load_surface("assets/bg.png");
 
     // Allocate memory for layers
     world->num_layers = layer_count;
@@ -91,9 +88,6 @@ void free_world(World* world) {
 
     free(cell_definitions);
     cell_definitions = NULL;
-
-    SDL_FreeSurface(base_bg_texture);
-    base_bg_texture = NULL;
 }
 
 void parse_layer_from_surface(SDL_Surface* surface, Layer* layer) {
