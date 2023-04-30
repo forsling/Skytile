@@ -48,7 +48,7 @@
       "args": [
         "-fdiagnostics-color=always",
         "-g",
-        "${workspaceFolder}/src/server/main.c",
+        "${workspaceFolder}/src/server/server.c",
         "${workspaceFolder}/src/game.c",
         "${workspaceFolder}/src/game_logic.c",
         "${workspaceFolder}/src/world.c",
