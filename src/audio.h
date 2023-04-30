@@ -2,6 +2,7 @@
 #define AUDIO_H
 
 #include <stdbool.h>
+
 bool audio_init();
 void audio_set_volume(float volume);
 bool audio_load_music(const char* filename);

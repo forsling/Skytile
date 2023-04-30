@@ -4,10 +4,11 @@
 #include <GL/glu.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+
+#include "game.h"
 #include "render.h"
 #include "world.h"
 #include "settings.h"
-#include "game_logic.h"
 #include "texture.h"
 
 void init_opengl() {

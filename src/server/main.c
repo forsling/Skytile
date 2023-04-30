@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_net.h>
 #include <stdio.h>
+
+#include "../game.h"
 #include "../game_logic.h"
 #include "../utils.h"
 #include "../settings.h"
@@ -60,6 +62,7 @@ int main(int argc, char *argv[]) {
 
                 // Send the updated game state back to the client
                 int sent = SDLNet_TCP_Send(client_socket, &game_state, sizeof(game_state));
+                printf("Sent %d bytes to client \n", sent);
                 if (sent < sizeof(game_state)) {
                     break; // An error occurred while sending the data or the client disconnected
                 }

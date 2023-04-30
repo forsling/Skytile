@@ -15,9 +15,6 @@ Cell* cell_definitions;
 int num_definitions;
 Cell default_cell;
 
-const int CELL_XY_SCALE = 2;
-const int CELL_Z_SCALE = 4;
-
 bool load_world(World* world, const char* level_name) {
     DIR* dir;
     struct dirent* entry;

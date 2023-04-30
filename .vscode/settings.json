@@ -57,6 +57,7 @@
         "world.h": "c",
         "math.h": "c",
         "sdl_net.h": "c",
-        "game_logic.h": "c"
+        "game_logic.h": "c",
+        "render.h": "c"
     }
 }

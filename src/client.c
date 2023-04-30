@@ -8,13 +8,13 @@
 #include <SDL2/SDL_net.h>
 
 #include "client.h"
+#include "game.h"
 #include "world.h"
 #include "vector.h"
 #include "utils.h"
 #include "render.h"
 #include "audio.h"
 #include "settings.h"
-#include "game_logic.h"
 #include "texture.h"
 
 static bool quit = false;
@@ -202,6 +202,13 @@ void play_sounds(GameState* game_state) {
     }
 }
 
+void print_game_state(const GameState *game_state) {
+    // Print world dimensions and other relevant information
+    printf("World: num_layers=%d\n", game_state->world.num_layers);
+    
+    // Add more print statements for other fields in the game state as needed
+}
+
 void main_loop() {
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
@@ -251,6 +258,8 @@ void main_loop() {
             printf("Server disconnected or an error occurred.\n");
             break;
         }
+
+        print_game_state(&game_state);
 
         // Play sounds on the client
         play_sounds(&game_state);

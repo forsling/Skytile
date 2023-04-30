@@ -5,45 +5,13 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include "vector.h"
-
-#define MAX_CELLS 16
-extern const int CELL_XY_SCALE;
-extern const int CELL_Z_SCALE;
-
-typedef enum {
-    CELL_VOID,
-    CELL_SOLID,
-    CELL_ROOM,
-    CELL_FLOOR
-} CellType;
-
-typedef struct {
-    CellType type;
-    SDL_Color color;
-} Cell;
-
-typedef struct {
-    Cell* cell;
-    vec3 position;
-} CellInfo;
-
-typedef struct {
-    int width;
-    int height;
-    Cell** cells;
-} Layer;
-
-typedef struct {
-    int num_layers;
-    Layer* layers;
-} World;
+#include "game.h"
 
 bool load_world(World* world, const char* level_name);
 void free_world(World* world);
 void parse_layer_from_surface(SDL_Surface* surface, Layer* layer);
 int parse_cell_definition(const char* line, Cell* def);
 Cell* get_cell(Layer* layer, int x, int y);
-CellInfo* get_cells_for_vector_3d(World* world, vec3 source, vec3 destination, int* num_cells);
 Cell* get_cell_definition_from_color(SDL_Color color, Cell* definitions, int num_definitions);
 Cell* read_cell_definitions(const char* filename, int* num_definitions);
 bool is_out_of_xy_bounds(Layer* layer, int x, int y);

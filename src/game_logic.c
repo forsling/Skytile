@@ -2,6 +2,7 @@
 #include <assert.h>
 
 #include "game_logic.h"
+#include "game.h"
 #include "vector.h"
 #include "world.h"
 #include "utils.h"
