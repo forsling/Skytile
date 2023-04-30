@@ -11,17 +11,21 @@ extern const int CELL_XY_SCALE;
 extern const int CELL_Z_SCALE;
 
 typedef enum {
-    CELL_OPEN,
-    CELL_SOLID
+    CELL_VOID,
+    CELL_SOLID,
+    CELL_ROOM,
+    CELL_FLOOR
 } CellType;
 
 typedef struct {
     CellType type;
     SDL_Color color;
-    GLuint floor_texture;
-    GLuint ceiling_texture;
-    GLuint wall_texture;
 } Cell;
+
+typedef struct {
+    Cell* cell;
+    vec3 position;
+} CellInfo;
 
 typedef struct {
     int width;
@@ -33,11 +37,6 @@ typedef struct {
     int num_layers;
     Layer* layers;
 } World;
-
-typedef struct {
-    Cell* cell;
-    vec3 position;
-} CellInfo;
 
 bool load_world(World* world, const char* level_name);
 void free_world(World* world);

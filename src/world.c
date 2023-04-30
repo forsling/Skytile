@@ -47,12 +47,9 @@ bool load_world(World* world, const char* level_name) {
     // Reset directory position
     rewinddir(dir);
 
-    default_cell.type = CELL_OPEN;
+    default_cell.type = CELL_VOID;
     SDL_Color cyan = {0, 255, 255};
     default_cell.color = cyan;
-    default_cell.floor_texture = 0;
-    default_cell.ceiling_texture = 0;
-    default_cell.wall_texture = 0;
 
     // Load cell definitions
     num_definitions = 0;
@@ -184,32 +181,15 @@ int parse_cell_definition(const char* line, Cell* def) {
 
         if (strcmp(type_str, "SOLID") == 0) {
             def->type = CELL_SOLID;
-        } else if (strcmp(type_str, "OPEN") == 0) {
-            def->type = CELL_OPEN;
+        } else if (strcmp(type_str, "ROOM") == 0) {
+            def->type = CELL_ROOM;
+        } else if (strcmp(type_str, "FLOOR") == 0) {
+            def->type = CELL_FLOOR;
+        } else if (strcmp(type_str, "VOID") == 0) {
+            def->type = CELL_VOID;
         } else {
             printf("Error: Invalid cell type: %s\n", type_str);
             return 0;
-        }
-
-        if (strcmp(c_str, "0") == 0) {
-            def->ceiling_texture = 0;
-        } else {
-            sscanf(c_str, "%d,%d,%d,%d", &cx, &cy, &cw, &ch);
-            def->ceiling_texture = create_texture(base_bg_texture, cx, cy, cw, ch);
-        }
-
-        if (strcmp(f_str, "0") == 0) {
-            def->floor_texture = 0;
-        } else {
-            sscanf(f_str, "%d,%d,%d,%d", &fx, &fy, &fw, &fh);
-            def->floor_texture = create_texture(base_bg_texture, fx, fy, fw, fh);
-        }
-
-        if (strcmp(w_str, "0") == 0) {
-            def->wall_texture = 0;
-        } else {
-            sscanf(w_str, "%d,%d,%d,%d", &wx, &wy, &ww, &wh);
-            def->wall_texture = create_texture(base_bg_texture, wx, wy, ww, wh);
         }
 
         printf("Loaded cell definition: %s\n", name_str);
