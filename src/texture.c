@@ -94,6 +94,7 @@ static void add_texture_info(SDL_Color color, TextureInfo info) {
 }
 
 TextureInfo* get_texture_info(SDL_Color color) {
+    color.a = 0;
     if (color.r == 0 && color.g == 255 && color.b == 255) {
         return &default_cell;
     }

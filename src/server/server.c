@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_net.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "../game.h"
 #include "../game_logic.h"
@@ -44,7 +45,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    const Uint32 targetTickRate = 60;
+    const Uint32 targetTickTime = 1000 / targetTickRate; // 1000ms / target TPS
+    Uint32 lastTickTime = 0;
+
     while (1) {
+        Uint32 currentTickTime = SDL_GetTicks();
+        float delta_time = fmin(((currentTickTime - lastTickTime) / 1000.0f), 0.1f);
+        game_state.delta_time = delta_time;
+
         TCPsocket client_socket = SDLNet_TCP_Accept(server_socket);
         if (client_socket) {
             printf("Client connected!\n");
@@ -62,7 +71,7 @@ int main(int argc, char *argv[]) {
 
                 // Send the updated game state back to the client
                 int sent = SDLNet_TCP_Send(client_socket, &game_state, sizeof(game_state));
-                printf("Sent %d bytes to client \n", sent);
+                //printf("Sent %d bytes to client \n", sent);
                 if (sent < sizeof(game_state)) {
                     break; // An error occurred while sending the data or the client disconnected
                 }
@@ -72,7 +81,13 @@ int main(int argc, char *argv[]) {
             printf("Client disconnected.\n");
         }
 
-        SDL_Delay(10);
+        // Cap the tick rate
+        Uint32 elapsedTime = SDL_GetTicks() - currentTickTime;
+        if (elapsedTime < targetTickTime) {
+            SDL_Delay(targetTickTime - elapsedTime);
+        }
+
+        lastTickTime = currentTickTime;
     }
 
     SDLNet_TCP_Close(server_socket);

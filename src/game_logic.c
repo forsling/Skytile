@@ -67,6 +67,7 @@ void update(GameState* game_state, InputState* input_state) {
 
 static vec2 process_input(GameState* game_state, InputState* input_state) {
     vec2 movement = {0.0f, 0.0f};
+    game_state->player.jumped = false;
 
     if (input_state->f.is_down && !input_state->f.was_down) {
         // Toggle free mode
@@ -99,6 +100,7 @@ static vec2 process_input(GameState* game_state, InputState* input_state) {
             game_state->player.jumped = true;
         }
     }
+
     if (game_state->player.free_mode && input_state->shift.is_down) {
         game_state->player.position.z += game_state->player.speed * game_state->delta_time;
     }
