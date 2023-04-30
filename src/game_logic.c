@@ -9,6 +9,8 @@
 #include "settings.h"
 #include "math.h"
 
+#define MAX_CELLS 16
+
 const float MOUSE_SENSITIVITY = 0.001f;
 
 static vec2 process_input(GameState* game_state, InputState* input_state);

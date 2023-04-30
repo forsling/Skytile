@@ -5,7 +5,9 @@
 #include "vector.h"
 
 #define MAX_PROJECTILES 128
-#define MAX_CELLS 16
+#define MAX_LAYERS 6
+#define MAX_WIDTH 32
+#define MAX_HEIGHT 32
 
 extern const int CELL_XY_SCALE;
 extern const int CELL_Z_SCALE;
@@ -78,12 +80,12 @@ typedef struct {
 typedef struct {
     int width;
     int height;
-    Cell** cells;
+    Cell cells[MAX_HEIGHT][MAX_WIDTH];
 } Layer;
 
 typedef struct {
     int num_layers;
-    Layer* layers;
+    Layer layers[MAX_LAYERS];
 } World;
 
 typedef struct GameState {

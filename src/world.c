@@ -34,9 +34,13 @@ bool load_world(World* world, const char* level_name) {
         }
     }
 
+    if (layer_count > MAX_LAYERS) {
+        printf("Too many layers in the level. Maximum allowed is %d.\n", MAX_LAYERS);
+        return false;
+    }
+
     // Allocate memory for layers
     world->num_layers = layer_count;
-    world->layers = malloc(layer_count * sizeof(Layer));
 
     // Reset directory position
     rewinddir(dir);
@@ -72,17 +76,10 @@ bool load_world(World* world, const char* level_name) {
 }
 
 void free_world(World* world) {
-    for (int i = 0; i < world->num_layers; ++i) {
-        Layer* layer = &world->layers[i];
-        for (int y = 0; y < layer->height; ++y) {
-            free(layer->cells[y]);
-        }
-        free(layer->cells);
-    }
-    free(world->layers);
-    world->layers = NULL;
+    // No need to free cells or layers, as they are now fixed-size arrays
     world->num_layers = 0;
 
+    // Free cell_definitions if necessary
     free(cell_definitions);
     cell_definitions = NULL;
 }
@@ -90,10 +87,8 @@ void free_world(World* world) {
 void parse_layer_from_surface(SDL_Surface* surface, Layer* layer) {
     layer->width = surface->w;
     layer->height = surface->h;
-    layer->cells = malloc(layer->height * sizeof(Cell*));
 
     for (int y = 0; y < layer->height; ++y) {
-        layer->cells[y] = malloc(layer->width * sizeof(Cell));
         for (int x = 0; x < layer->width; ++x) {
             Uint8 r, g, b;
             SDL_GetRGB(get_pixel32(surface, x, y), surface->format, &r, &g, &b);
