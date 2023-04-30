@@ -6,7 +6,7 @@
 #include "../settings.h"
 
 #define SERVER_PORT 12345
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 8192
 
 int main(int argc, char *argv[]) {
     if (SDL_Init(0) == -1 || SDLNet_Init() == -1) {

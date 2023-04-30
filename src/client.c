@@ -65,6 +65,11 @@ bool init_engine() {
         return false;
     }
 
+    if (SDLNet_Init() == -1) {
+        printf("Error initializing SDL_net: %s\n", SDLNet_GetError());
+        return false;
+    }
+
     // Setup audio
     have_audio = audio_init();
     float vol = get_setting_float("master_volume");
@@ -215,11 +220,19 @@ void main_loop() {
 
     // Connect to the server
     IPaddress server_ip;
-    SDLNet_ResolveHost(&server_ip, SERVER_HOSTNAME, SERVER_PORT);
-    TCPsocket server_socket = SDLNet_TCP_Open(&server_ip);
-    if (!server_socket) {
-        printf("Unable to connect to server: %s\n", SDLNet_GetError());
-        return;
+    TCPsocket server_socket = {0};
+    while (!server_socket) {
+        if (SDLNet_ResolveHost(&server_ip, SERVER_HOSTNAME, SERVER_PORT) == -1) {
+            printf("Error resolving server IP: %s\n", SDLNet_GetError());
+            return;
+        } else {
+            printf("Resolved server IP: %d.%d.%d.%d\n", server_ip.host & 0xFF, (server_ip.host >> 8) & 0xFF, (server_ip.host >> 16) & 0xFF, (server_ip.host >> 24) & 0xFF);
+        }
+        server_socket = SDLNet_TCP_Open(&server_ip);
+        if (!server_socket) {
+            printf("Unable to connect to server: %s\n", SDLNet_GetError());
+            SDL_Delay(2000);
+        }
     }
 
     while (!quit) {

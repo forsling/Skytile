@@ -1,0 +1,6 @@
+current_level:string=darkchasm
+gravity:float=15.00
+allow_free_mode:bool=true
+player_pos_x:float=5.00
+player_pos_y:float=5.00
+player_pos_z:float=-2.00
