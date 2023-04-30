@@ -147,42 +147,6 @@ void render_world(World* world, Player* player) {
     }
 }
 
-// Function to create a GLuint texture from a sub-region of the given SDL_Surface
-GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height) {
-    if (!image) {
-        printf("Error: Invalid SDL_Surface\n");
-        return 0;
-    }
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    GLenum format = (image->format->BytesPerPixel == 4) ? GL_RGBA : GL_RGB;
-
-    // Create a new SDL_Surface for the sub-region
-    SDL_Surface* subImage = SDL_CreateRGBSurface(0, width, height, image->format->BitsPerPixel,
-                                                 image->format->Rmask, image->format->Gmask,
-                                                 image->format->Bmask, image->format->Amask);
-
-    // Copy the sub-region to the new SDL_Surface
-    SDL_Rect srcRect = {x, y, width, height};
-    SDL_BlitSurface(image, &srcRect, subImage, NULL);
-
-    // Create the texture from the sub-region surface
-    glTexImage2D(GL_TEXTURE_2D, 0, format, subImage->w, subImage->h, 0, format, GL_UNSIGNED_BYTE, subImage->pixels);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    SDL_FreeSurface(subImage);
-
-    return texture;
-}
-
 void render_projectile(Projectile* projectile, GLuint texture) {
     glPushMatrix();
     glTranslatef(projectile->position.x, projectile->position.y, projectile->position.z);

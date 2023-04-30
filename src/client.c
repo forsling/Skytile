@@ -24,6 +24,9 @@ SDL_Renderer* renderer = NULL;
 SDL_GLContext gl_context = NULL;
 SDL_Surface* base_fg_texture;
 
+#define MAX_TEXTURES 128
+TextureInfo texture_map[MAX_TEXTURES];
+
 bool have_audio = false;
 int sound_jump;
 

@@ -9,6 +9,12 @@
 #include "vector.h"
 #include "game_logic.h"
 
+typedef struct TextureInfo {
+    GLuint floor_texture;
+    GLuint ceiling_texture;
+    GLuint wall_texture;
+} TextureInfo;
+
 // Engine initialization and cleanup functions
 bool init_engine();
 void main_loop();
