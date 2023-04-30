@@ -1,5 +1,6 @@
 #ifndef VECTOR_H
 #define VECTOR_H
+#include <SDL2/SDL_image.h>
 
 typedef struct {
     float x, y;

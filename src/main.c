@@ -3,7 +3,7 @@
 #include "settings.h"
 
 int main(int argc, char* argv[]) {
-    if (!load_settings("settings.txt")) {
+    if (!load_settings("settings.txt", false)) {
         fprintf(stderr, "Failed to load settings\n");
         return 2;
     }

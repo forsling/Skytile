@@ -2,6 +2,8 @@
 #include <SDL2/SDL_net.h>
 #include <stdio.h>
 #include "../game_logic.h"
+#include "../utils.h"
+#include "../settings.h"
 
 #define SERVER_PORT 12345
 #define BUFFER_SIZE 4096
@@ -9,6 +11,11 @@
 int main(int argc, char *argv[]) {
     if (SDL_Init(0) == -1 || SDLNet_Init() == -1) {
         printf("Error initializing SDL or SDL_net: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    if (!load_settings("server.txt")) {
+        fprintf(stderr, "Failed to load settings\n");
         return 1;
     }
 
