@@ -1,8 +1,10 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_net.h>
 #include <stdio.h>
+#include "../game_logic.h"
 
 #define SERVER_PORT 12345
+#define BUFFER_SIZE 4096
 
 int main(int argc, char *argv[]) {
     if (SDL_Init(0) == -1 || SDLNet_Init() == -1) {
@@ -24,18 +26,36 @@ int main(int argc, char *argv[]) {
 
     printf("Server listening on port %d...\n", SERVER_PORT);
 
+    GameState game_state;
+
+    // Start the level
+    const char* level = "darkchasm";
+    if (!start_level(&game_state, level)) {
+        printf("Fail to start level %s \n", level);
+        return 1;
+    }
+
     while (1) {
         TCPsocket client_socket = SDLNet_TCP_Accept(server_socket);
         if (client_socket) {
             printf("Client connected!\n");
 
-            char buffer[1024];
-            int received = SDLNet_TCP_Recv(client_socket, buffer, sizeof(buffer) - 1);
-            if (received > 0) {
-                buffer[received] = '\0';
-                printf("Received data from client: %s\n", buffer);
+            // Loop until the client disconnects
+            while (1) {
+                InputState input_state;
+                int received = SDLNet_TCP_Recv(client_socket, &input_state, sizeof(input_state));
+                if (received <= 0) {
+                    break; // Client disconnected or an error occurred
+                }
 
-                // Process the received data and update the game state here
+                // Process the received input state and update the game state
+                update(&game_state, &input_state);
+
+                // Send the updated game state back to the client
+                int sent = SDLNet_TCP_Send(client_socket, &game_state, sizeof(game_state));
+                if (sent < sizeof(game_state)) {
+                    break; // An error occurred while sending the data or the client disconnected
+                }
             }
 
             SDLNet_TCP_Close(client_socket);

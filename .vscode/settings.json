@@ -55,6 +55,7 @@
         "gl.h": "c",
         "sdl_opengl.h": "c",
         "world.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "sdl_net.h": "c"
     }
 }

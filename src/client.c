@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_net.h>
 
 #include "client.h"
 #include "world.h"
@@ -199,10 +201,15 @@ void main_loop() {
     InputState input_state = {0};
     InputState prev_input_state = {0};
 
-    // Start the level
-    const char* level = get_setting_string("current_level");
-    if (!start_level(&game_state, level)) {
-        printf("Fail to start level %s \n", level);
+    const char* SERVER_HOSTNAME = "127.0.0.1";
+    const Uint16 SERVER_PORT = 12345;
+
+    // Connect to the server
+    IPaddress server_ip;
+    SDLNet_ResolveHost(&server_ip, SERVER_HOSTNAME, SERVER_PORT);
+    TCPsocket server_socket = SDLNet_TCP_Open(&server_ip);
+    if (!server_socket) {
+        printf("Unable to connect to server: %s\n", SDLNet_GetError());
         return;
     }
 
@@ -211,10 +218,19 @@ void main_loop() {
         float delta_time = fmin(((currentFrameTime - lastFrameTime) / 1000.0f), 0.1f);
         game_state.delta_time = delta_time;
 
-        // Process input and update game state
+        // Process input and send input state to server
         prev_input_state = input_state;
         input_state = process_input(&prev_input_state, delta_time);
-        update(&game_state, &input_state);
+        SDLNet_TCP_Send(server_socket, &input_state, sizeof(input_state));
+
+        // Receive game state from server
+        int received = SDLNet_TCP_Recv(server_socket, &game_state, sizeof(game_state));
+        if (received <= 0) {
+            printf("Server disconnected or an error occurred.\n");
+            break;
+        }
+
+        // Play sounds on the client
         play_sounds(&game_state);
 
         // Rendering
@@ -232,5 +248,6 @@ void main_loop() {
         lastFrameTime = currentFrameTime;
     }
 
+    SDLNet_TCP_Close(server_socket);
     SDL_SetRelativeMouseMode(SDL_FALSE);
 }
