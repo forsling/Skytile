@@ -166,7 +166,7 @@ InputState process_input(InputState* previous_input_state, float deltaTime) {
 
 bool load_engine_assets(GameState* gamestate) {
     base_fg_texture = load_surface("assets/fg.png");
-    base_bg_texture = load_surface("assets/fg.png");
+    base_bg_texture = load_surface("assets/bg.png");
     projectile_texture = create_texture(base_fg_texture, 1088, 192, 32, 32);
 
     sound_jump = audio_load_sound("assets/jump1.wav");
@@ -213,7 +213,7 @@ void main_loop() {
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
     Uint32 lastFrameTime = 0;
-    const Uint32 targetFrameRate = 120;
+    const Uint32 targetFrameRate = 30;
     const Uint32 targetFrameTime = 1000 / targetFrameRate; // 1000ms / target FPS
 
     InputState input_state = {0};
@@ -257,6 +257,8 @@ void main_loop() {
         if (received <= 0) {
             printf("Server disconnected or an error occurred.\n");
             break;
+        } else {
+            printf("Received %d bytes from the server \n", received);
         }
 
         print_game_state(&game_state);

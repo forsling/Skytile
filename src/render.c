@@ -135,6 +135,11 @@ void render_world(World* world, Player* player) {
                     TextureInfo* neighbor_texture_info = neighbor ? get_texture_info(neighbor->color) : NULL;
 
                     if (cell->type != CELL_SOLID && neighbor != NULL && neighbor->type == CELL_SOLID) {
+                        if (neighbor && !neighbor_texture_info) {
+                            printf("Failed to find texture for color: r=%d, g=%d, b=%d\n",
+                                neighbor->color.r, neighbor->color.g, neighbor->color.b);
+                            continue;
+                        }
                         //Render walls for adjacent solid blocks
                         render_face(x * CELL_XY_SCALE, y * CELL_XY_SCALE, z * CELL_Z_SCALE, CELL_XY_SCALE, CELL_Z_SCALE, neighbor_dirs[i], neighbor_texture_info->wall_texture);
 

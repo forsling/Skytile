@@ -10,6 +10,7 @@
 
 static TextureNode* hash_table[HASH_TABLE_SIZE] = {0};
 static SDL_Surface* texture_atlas = NULL;
+static TextureInfo default_cell;
 
 static unsigned int color_hash(SDL_Color color);
 static void add_texture_info(SDL_Color color, TextureInfo info);
@@ -36,6 +37,11 @@ void init_texture_handler(const char* cell_definitions_path, SDL_Surface* atlas)
     }
 
     fclose(file);
+    default_cell = (TextureInfo) {
+        .ceiling_texture = 0,
+        .floor_texture = 0,
+        .wall_texture = 0
+    };
 }
 
 GLuint create_texture(SDL_Surface* image, int x, int y, int width, int height) {
@@ -79,7 +85,7 @@ static int hash(SDL_Color color) {
 
 static void add_texture_info(SDL_Color color, TextureInfo info) {
     int index = hash(color);
-
+    color.a = 0;
     TextureNode* new_node = (TextureNode*)malloc(sizeof(TextureNode));
     new_node->color = color;
     new_node->texture_info = info;
@@ -88,6 +94,9 @@ static void add_texture_info(SDL_Color color, TextureInfo info) {
 }
 
 TextureInfo* get_texture_info(SDL_Color color) {
+    if (color.r == 0 && color.g == 255 && color.b == 255) {
+        return &default_cell;
+    }
     int index = hash(color);
     TextureNode* node = hash_table[index];
 

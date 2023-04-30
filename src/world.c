@@ -106,7 +106,7 @@ Cell* get_cell_definition_from_color(SDL_Color color, Cell* definitions, int num
             return def;
         }
     }
-
+    printf("Returning default cell for %d,%d,%d \n",color.r, color.g, color.b);
     return &default_cell;
 }
 
