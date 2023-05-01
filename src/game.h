@@ -8,6 +8,7 @@
 #define MAX_LAYERS 6
 #define MAX_WIDTH 32
 #define MAX_HEIGHT 32
+#define MAX_PLAYERS 4
 
 extern const int CELL_XY_SCALE;
 extern const int CELL_Z_SCALE;
@@ -89,7 +90,8 @@ typedef struct {
 } World;
 
 typedef struct GameState {
-    Player player;
+    Player players[4];
+    int players_count;
     Projectile projectiles[MAX_PROJECTILES];
     float delta_time;
 } GameState;

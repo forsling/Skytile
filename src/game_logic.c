@@ -13,8 +13,8 @@
 
 const float MOUSE_SENSITIVITY = 0.001f;
 
-static vec2 process_input(GameState* game_state, InputState* input_state);
-static void process_mouse(GameState* game_state, InputState* input_state);
+static vec2 process_input(Player* player, InputState* input_state, float delta_time);
+static void process_mouse(Player* player, InputState* input_state);
 
 static void calculate_projectile_direction(Player* player, vec3* direction);
 static void create_projectile(Projectile* projectiles, Player* player);
@@ -25,11 +25,12 @@ static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_po
 static CellInfo* get_cells_for_vector(World* world, vec3 source, vec3 destination, int* num_cells);
 static vec3 get_furthest_legal_position(World* world, vec3 source, vec3 destination, float collision_buffer);
 
-void update(GameState* game_state, World* world, InputState* input_state) {
-    vec2 movement = process_input(game_state, input_state);
-    process_mouse(game_state, input_state);
+void update(GameState* game_state, World* world, InputState* input_state, int player_index) {
+    Player* player = &game_state->players[player_index];
+    vec2 movement = process_input(player, input_state, game_state->delta_time);
+    process_mouse(player, input_state);
         
-    update_player_position(&game_state->player, world, movement.x, movement.y, game_state->delta_time);
+    update_player_position(player, world, movement.x, movement.y, game_state->delta_time);
 
     // Update projectiles
     for (int i = 0; i < MAX_PROJECTILES; i++) {
@@ -37,64 +38,64 @@ void update(GameState* game_state, World* world, InputState* input_state) {
     }
 
     if (input_state->mouse_button_1.is_down && !input_state->mouse_button_1.was_down) {
-        create_projectile(game_state->projectiles, &game_state->player);
+        create_projectile(game_state->projectiles, player);
     }
 }
 
 
-static vec2 process_input(GameState* game_state, InputState* input_state) {
+static vec2 process_input(Player* player, InputState* input_state, float delta_time) {
     vec2 movement = {0.0f, 0.0f};
-    game_state->player.jumped = false;
+    player->jumped = false;
 
     if (input_state->f.is_down && !input_state->f.was_down) {
         // Toggle free mode
-        game_state->player.free_mode = !game_state->player.free_mode;
+        player->free_mode = !player->free_mode;
     }
 
     if (input_state->up.is_down) {
-        movement.x += cosf(game_state->player.yaw);
-        movement.y += sinf(game_state->player.yaw);
+        movement.x += cosf(player->yaw);
+        movement.y += sinf(player->yaw);
     }
     if (input_state->down.is_down) {
-        movement.x -= cosf(game_state->player.yaw);
-        movement.y -= sinf(game_state->player.yaw);
+        movement.x -= cosf(player->yaw);
+        movement.y -= sinf(player->yaw);
     }
     if (input_state->right.is_down) {
-        movement.x -= sinf(game_state->player.yaw);
-        movement.y += cosf(game_state->player.yaw);
+        movement.x -= sinf(player->yaw);
+        movement.y += cosf(player->yaw);
     }
     if (input_state->left.is_down) {
-        movement.x += sinf(game_state->player.yaw);
-        movement.y -= cosf(game_state->player.yaw);
+        movement.x += sinf(player->yaw);
+        movement.y -= cosf(player->yaw);
     }
 
     // Handle jumping and free mode
     if (input_state->space.is_down) {
-        if (game_state->player.free_mode) {
-            game_state->player.position.z -= game_state->player.speed * game_state->delta_time;
-        } else if (game_state->player.velocity_z == 0.0f) { // Jump only when the player is on the ground
-            game_state->player.velocity_z = game_state->player.jump_velocity;
-            game_state->player.jumped = true;
+        if (player->free_mode) {
+            player->position.z -= player->speed * delta_time;
+        } else if (player->velocity_z == 0.0f) { // Jump only when the player is on the ground
+            player->velocity_z = player->jump_velocity;
+            player->jumped = true;
         }
     }
 
-    if (game_state->player.free_mode && input_state->shift.is_down) {
-        game_state->player.position.z += game_state->player.speed * game_state->delta_time;
+    if (player->free_mode && input_state->shift.is_down) {
+        player->position.z += player->speed * delta_time;
     }
 
     return movement;
 }
 
-static void process_mouse(GameState* game_state, InputState* input_state) {
+static void process_mouse(Player* player, InputState* input_state) {
     // Update player's yaw and pitch based on mouse input
-    game_state->player.yaw += input_state->mouse_state.dx * MOUSE_SENSITIVITY;
-    game_state->player.pitch -= input_state->mouse_state.dy * MOUSE_SENSITIVITY;
+    player->yaw += input_state->mouse_state.dx * MOUSE_SENSITIVITY;
+    player->pitch -= input_state->mouse_state.dy * MOUSE_SENSITIVITY;
 
-    if (game_state->player.pitch < -M_PI / 2) {
-        game_state->player.pitch = -M_PI / 2;
+    if (player->pitch < -M_PI / 2) {
+        player->pitch = -M_PI / 2;
     }
-    if (game_state->player.pitch > M_PI / 2) {
-        game_state->player.pitch = M_PI / 2;
+    if (player->pitch > M_PI / 2) {
+        player->pitch = M_PI / 2;
     }
 }
 

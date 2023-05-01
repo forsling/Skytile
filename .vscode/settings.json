@@ -58,6 +58,7 @@
         "math.h": "c",
         "sdl_net.h": "c",
         "game_logic.h": "c",
-        "render.h": "c"
+        "render.h": "c",
+        "sdl_mutex.h": "c"
     }
 }
