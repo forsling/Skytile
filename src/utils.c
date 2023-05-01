@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include "utils.h"
 #include <SDL2/SDL_image.h>
 
+bool enable_debuglog = false;
+
 void debuglog(int one_in_n_chance, const char* format, ...)
 {
-    if (!debuglog) {
+    if (!enable_debuglog) {
         return;
     }
     if (rand() % one_in_n_chance == 0) {

@@ -191,7 +191,6 @@ static void update_player_position(Player* player, World* world, float dx, float
         vec3 furthest_legal_position = get_furthest_legal_position(world, source, destination, player->size);
         target_x = furthest_legal_position.x;
         target_y = furthest_legal_position.y;
-        target_z = furthest_legal_position.z;
     }
 
     // z-axis handling
