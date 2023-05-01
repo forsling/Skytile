@@ -196,10 +196,10 @@ void cleanup_engine() {
     SDL_Quit();
 }
 
-void play_sounds(GameState* game_state) {
-    if (game_state->player.jumped) {
+void play_sounds(GameState* game_state, int player_id) {
+    if (game_state->players[player_id].jumped) {
         audio_play_sound(sound_jump, 0.2f);
-        game_state->player.jumped = false;
+        game_state->players[player_id].jumped = false;
     }
 }
 
@@ -246,9 +246,12 @@ void main_loop() {
         return;
     }
 
+    // Store the player ID
+    int player_id = initial_game_state.player_id;
+
     // Copy over intial game state
     world = initial_game_state.world;
-    game_state.player = initial_game_state.player;
+    game_state.players[player_id] = initial_game_state.player;
     memcpy(&game_state.projectiles, &initial_game_state.projectiles, sizeof(game_state.projectiles));
 
     while (!quit) {
@@ -269,11 +272,11 @@ void main_loop() {
         }
 
         // Play sounds on the client
-        play_sounds(&game_state);
+        play_sounds(&game_state, player_id);
 
         // Rendering
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        render_world(&world, &game_state.player);
+        render_world(&world, &game_state.players[player_id]);
         render_projectiles(&game_state, projectile_texture);
         SDL_GL_SwapWindow(window);
 

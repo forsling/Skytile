@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include "../game.h"
 #include "../game_logic.h"
@@ -51,7 +52,8 @@ int handle_client(void* data) {
     InitialGameState initial_game_state = {
         .world = *world,
         .projectiles = {0},
-        .player = game_state->players[player_index]
+        .player = game_state->players[player_index],
+        .player_id = player_index
     };
     int sent_initial = SDLNet_TCP_Send(client_socket, &initial_game_state, sizeof(initial_game_state));
     if (sent_initial < sizeof(initial_game_state)) {
