@@ -11,6 +11,6 @@ typedef struct {
 } CellInfo;
 
 bool start_level(GameState* gamestate, const char* level);
-void update(GameState* game_state, InputState* input_state);
+void update(GameState* game_state, World* world, InputState* input_state);
 
 #endif // GAME_LOGIC_H

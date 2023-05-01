@@ -89,10 +89,15 @@ typedef struct {
 } World;
 
 typedef struct GameState {
-    World world;
     Player player;
     Projectile projectiles[MAX_PROJECTILES];
     float delta_time;
 } GameState;
+
+typedef struct InitialGameState {
+    World world;
+    Player player;
+    Projectile projectiles[MAX_PROJECTILES];
+} InitialGameState;
 
 #endif // GAME_H

@@ -34,6 +34,7 @@ int sound_jump;
 
 GLuint projectile_texture;
 GameState game_state;
+World world;
 
 bool init_engine() {
     //Init SDL and create window
@@ -175,7 +176,7 @@ bool load_engine_assets(GameState* gamestate) {
 }
 
 void free_engine_assets() {
-    free_world(&game_state.world);
+    free_world(&world);
     audio_quit();
 }
 
@@ -235,6 +236,21 @@ void main_loop() {
         }
     }
 
+    // Receive initial game state from server
+    InitialGameState initial_game_state;
+    int received_initial = SDLNet_TCP_Recv(server_socket, &initial_game_state, sizeof(initial_game_state));
+    if (received_initial <= 0) {
+        printf("Error receiving initial game state from server.\n");
+        SDLNet_TCP_Close(server_socket);
+        SDL_SetRelativeMouseMode(SDL_FALSE);
+        return;
+    }
+
+    // Copy over intial game state
+    world = initial_game_state.world;
+    game_state.player = initial_game_state.player;
+    memcpy(&game_state.projectiles, &initial_game_state.projectiles, sizeof(game_state.projectiles));
+
     while (!quit) {
         Uint32 currentFrameTime = SDL_GetTicks();
         float delta_time = fmin(((currentFrameTime - lastFrameTime) / 1000.0f), 0.1f);
@@ -257,7 +273,7 @@ void main_loop() {
 
         // Rendering
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        render_world(&game_state.world, &game_state.player);
+        render_world(&world, &game_state.player);
         render_projectiles(&game_state, projectile_texture);
         SDL_GL_SwapWindow(window);
 

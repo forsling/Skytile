@@ -2,6 +2,8 @@
 #include <SDL2/SDL_net.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "../game.h"
 #include "../game_logic.h"
@@ -11,7 +13,11 @@
 #define SERVER_PORT 12345
 #define BUFFER_SIZE 8192
 
+World world;
+
 int main(int argc, char *argv[]) {
+    srand(time(NULL));
+
     if (SDL_Init(0) == -1 || SDLNet_Init() == -1) {
         printf("Error initializing SDL or SDL_net: %s\n", SDL_GetError());
         return 1;
@@ -36,15 +42,38 @@ int main(int argc, char *argv[]) {
 
     printf("Server listening on port %d...\n", SERVER_PORT);
 
+    // Load level data
+    const char* level_name = "darkchasm";
+    if (!load_world(&world, level_name)) {
+        printf("Failed to load world.\n");
+        return false;
+    }
+    
+    // Initialize game state
     GameState game_state;
-
-    // Start the level
-    const char* level = "darkchasm";
-    if (!start_level(&game_state, level)) {
-        printf("Fail to start level %s \n", level);
-        return 1;
+    {
+        int player_x = rand() % (world.layers[0].width + 1); 
+        int player_y = rand() % (world.layers[0].height + 1); 
+        float player_height = CELL_Z_SCALE / 2;
+        game_state.player = (Player) {
+            .position.x = player_x,
+            .position.y = player_y,
+            .position.z = 4 - player_height,
+            .height = player_height,
+            .speed = 10.0f,
+            .jump_velocity = -8.0f,
+            .size = 0.3 * CELL_XY_SCALE
+        };
+        game_state.delta_time = 0.0f;
+        memset(game_state.projectiles, 0, sizeof(game_state.projectiles));
     }
 
+    InitialGameState initial_game_state = {
+        .world = world,
+        .projectiles = {0},
+        .player = game_state.player
+    };
+            
     const Uint32 targetTickRate = 60;
     const Uint32 targetTickTime = 1000 / targetTickRate; // 1000ms / target TPS
     Uint32 lastTickTime = 0;
@@ -58,6 +87,16 @@ int main(int argc, char *argv[]) {
         if (client_socket) {
             printf("Client connected!\n");
 
+            // Send initial game state to the client
+            memcpy(&initial_game_state.player, &game_state.projectiles, sizeof(game_state.projectiles));
+            memcpy(&initial_game_state.player, &game_state.player, sizeof(game_state.player));
+            int sent_initial = SDLNet_TCP_Send(client_socket, &initial_game_state, sizeof(initial_game_state));
+            if (sent_initial < sizeof(initial_game_state)) {
+                printf("Error sending initial game state to the client.\n");
+                SDLNet_TCP_Close(client_socket);
+                continue;
+            }
+
             // Loop until the client disconnects
             while (1) {
                 InputState input_state;
@@ -67,7 +106,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 // Process the received input state and update the game state
-                update(&game_state, &input_state);
+                update(&game_state, &world, &input_state);
 
                 // Send the updated game state back to the client
                 int sent = SDLNet_TCP_Send(client_socket, &game_state, sizeof(game_state));
