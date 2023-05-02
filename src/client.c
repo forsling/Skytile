@@ -33,6 +33,7 @@ bool have_audio = false;
 int sound_jump;
 
 GLuint projectile_texture;
+GLuint player_texture;
 GameState game_state;
 World world;
 
@@ -169,6 +170,7 @@ bool load_engine_assets(GameState* gamestate) {
     base_fg_texture = load_surface("assets/fg.png");
     base_bg_texture = load_surface("assets/bg.png");
     projectile_texture = create_texture(base_fg_texture, 1088, 192, 32, 32);
+    player_texture = create_texture(base_fg_texture, 32, 160, 32, 32);
 
     sound_jump = audio_load_sound("assets/jump1.wav");
 
@@ -269,13 +271,16 @@ void main_loop() {
             break;
         }
 
+        Player* player = &game_state.players[player_id];
+
         // Play sounds on the client
         play_sounds(&game_state, player_id);
 
         // Rendering
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        render_world(&world, &game_state.players[player_id]);
+        render_world(&world, player);
         render_projectiles(&game_state, projectile_texture);
+        render_players(game_state.players, player_id, game_state.players_count, player_texture);
         SDL_GL_SwapWindow(window);
 
         // Cap the framerate

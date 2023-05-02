@@ -37,7 +37,8 @@ void add_new_player(GameState* game_state, World* world, int player_index) {
         .height = player_height,
         .speed = 10.0f,
         .jump_velocity = -8.0f,
-        .size = 0.3 * CELL_XY_SCALE
+        .size = 0.3 * CELL_XY_SCALE,
+        .alive = true
     };
 }
 

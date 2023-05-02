@@ -23,6 +23,7 @@ typedef struct Player {
     float size;
     bool free_mode;
     bool jumped;
+    bool alive;
 } Player;
 
 typedef struct Projectile {

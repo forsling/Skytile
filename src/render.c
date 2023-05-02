@@ -10,6 +10,7 @@
 #include "world.h"
 #include "settings.h"
 #include "texture.h"
+#include "vector.h"
 
 void init_opengl() {
     // Set swap interval for Vsync
@@ -81,6 +82,60 @@ void render_face(float x, float y, float z, float width, float height, Direction
     }
 
     glEnd();
+}
+
+static void render_player_texture(Player* player, GLuint texture) {
+    // Calculate the four corner vertices in the player's local space
+    float half_size = player->height / 2;
+    vec3 local_vertices[4] = {
+        {-half_size, 0, -half_size},
+        {half_size, 0, -half_size},
+        {half_size, 0, half_size},
+        {-half_size, 0, half_size}
+    };
+
+    // Rotate and translate the vertices to the world space
+    vec3 world_vertices[4];
+    for (int i = 0; i < 4; ++i) {
+        // Rotate the vertex around the Y axis by the player's yaw
+        float s = sinf(player->yaw);
+        float c = cosf(player->yaw);
+        vec3 rotated_vertex = {
+            local_vertices[i].x * c - local_vertices[i].z * s,
+            local_vertices[i].y,
+            local_vertices[i].x * s + local_vertices[i].z * c
+        };
+
+        // Translate the vertex to the player's position
+        world_vertices[i] = vec3_add(player->position, rotated_vertex);
+    }
+
+    // Render the textured quad
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBegin(GL_QUADS);
+
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(world_vertices[0].x, world_vertices[0].y, world_vertices[0].z);
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(world_vertices[1].x, world_vertices[1].y, world_vertices[1].z);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(world_vertices[2].x, world_vertices[2].y, world_vertices[2].z);
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(world_vertices[3].x, world_vertices[3].y, world_vertices[3].z);
+
+    glEnd();
+}
+
+void render_players(Player* players, int current_player, int players_count, GLuint texture) {
+    for (int i = 0; i < players_count; i++) {
+        if (i == current_player) {
+            continue;
+        }
+        render_player_texture(&players[i], texture);
+    }
 }
 
 void render_world(World* world, Player* player) {
