@@ -34,6 +34,7 @@ vec3 vec3_add(vec3 a, vec3 b);
 vec3 vec3_normalize(vec3 a);
 vec3 vec3_multiply_scalar(vec3 a, float scalar);
 float vec3_length(vec3 a);
+void vec3_cross(const vec3* a, const vec3* b, vec3* result);
 
 ivec3 get_grid_pos3(float x, float y, float z);
 float point_to_aabb_distance_3d(float px, float py, float pz, float min_x, float min_y, float min_z, float max_x, float max_y, float max_z);

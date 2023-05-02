@@ -59,6 +59,12 @@ float vec3_length(vec3 a) {
     return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
 }
 
+void vec3_cross(const vec3* a, const vec3* b, vec3* result) {
+    result->x = a->y * b->z - a->z * b->y;
+    result->y = a->z * b->x - a->x * b->z;
+    result->z = a->x * b->y - a->y * b->x;
+}
+
 ivec2 get_grid_pos2(float x, float y) {
     ivec2 gridpos = {
         .x = (int)(x / CELL_XY_SCALE),

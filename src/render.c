@@ -84,31 +84,27 @@ void render_face(float x, float y, float z, float width, float height, Direction
     glEnd();
 }
 
-static void render_player_texture(Player* player, GLuint texture) {
-    // Calculate the four corner vertices in the player's local space
-    float half_size = player->height / 2;
-    vec3 local_vertices[4] = {
-        {-half_size, 0, -half_size},
-        {half_size, 0, -half_size},
-        {half_size, 0, half_size},
-        {-half_size, 0, half_size}
-    };
+void render_player_texture(Player* player, GLuint texture) {
+    // Calculate the forward direction based on the player's yaw
+    float s = sinf(player->yaw);
+    float c = cosf(player->yaw);
+    vec3 forward = {c, s, 0};
 
-    // Rotate and translate the vertices to the world space
+    // Calculate the right direction (cross product of forward and up)
+    vec3 up = {0, 0, -1};
+    vec3 right;
+    vec3_cross(&forward, &up, &right);
+
+    // Calculate the half-size vector of the textured quad
+    vec3 half_size_right = vec3_multiply_scalar(right, player->height / 2);
+    vec3 half_size_up = vec3_multiply_scalar(up, player->height / 2);
+
+    // Calculate the four corner vertices in the world space
     vec3 world_vertices[4];
-    for (int i = 0; i < 4; ++i) {
-        // Rotate the vertex around the Y axis by the player's yaw
-        float s = sinf(player->yaw);
-        float c = cosf(player->yaw);
-        vec3 rotated_vertex = {
-            local_vertices[i].x * c - local_vertices[i].z * s,
-            local_vertices[i].y,
-            local_vertices[i].x * s + local_vertices[i].z * c
-        };
-
-        // Translate the vertex to the player's position
-        world_vertices[i] = vec3_add(player->position, rotated_vertex);
-    }
+    world_vertices[2] = vec3_subtract(vec3_add(player->position, half_size_right), half_size_up);
+    world_vertices[3] = vec3_subtract(vec3_subtract(player->position, half_size_right), half_size_up);
+    world_vertices[0] = vec3_add(vec3_subtract(player->position, half_size_right), half_size_up);
+    world_vertices[1] = vec3_add(vec3_add(player->position, half_size_right), half_size_up);
 
     // Render the textured quad
     glBindTexture(GL_TEXTURE_2D, texture);
