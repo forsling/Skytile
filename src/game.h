@@ -98,8 +98,6 @@ typedef struct GameState {
 
 typedef struct InitialGameState {
     World world;
-    Player player;
-    Projectile projectiles[MAX_PROJECTILES];
     int player_id;
 } InitialGameState;
 

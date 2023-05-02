@@ -51,8 +51,6 @@ int handle_client(void* data) {
     // Send initial game state to the client
     InitialGameState initial_game_state = {
         .world = *world,
-        .projectiles = {0},
-        .player = game_state->players[player_index],
         .player_id = player_index
     };
     int sent_initial = SDLNet_TCP_Send(client_socket, &initial_game_state, sizeof(initial_game_state));

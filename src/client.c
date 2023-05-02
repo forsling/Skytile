@@ -251,8 +251,6 @@ void main_loop() {
 
     // Copy over intial game state
     world = initial_game_state.world;
-    game_state.players[player_id] = initial_game_state.player;
-    memcpy(&game_state.projectiles, &initial_game_state.projectiles, sizeof(game_state.projectiles));
 
     while (!quit) {
         Uint32 currentFrameTime = SDL_GetTicks();
