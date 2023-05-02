@@ -136,17 +136,6 @@ InputState process_input(InputState* previous_input_state, float deltaTime) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                     quit = true;
                 }
-            case SDL_MOUSEBUTTONDOWN:
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    new_input_state.space.was_down = false;
-                    new_input_state.space.is_down = true;
-                }
-                break;
-            case SDL_MOUSEBUTTONUP:
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    new_input_state.space.was_down = true;
-                    new_input_state.space.is_down = false;
-                }
                 break;
         }
     }
