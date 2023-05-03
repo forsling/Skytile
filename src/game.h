@@ -94,7 +94,6 @@ typedef struct GameState {
     Player players[4];
     int players_count;
     Projectile projectiles[MAX_PROJECTILES];
-    float delta_time;
 } GameState;
 
 typedef struct InitialGameState {

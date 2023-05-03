@@ -93,7 +93,7 @@ ButtonState get_mouse_button_state(uint32_t button, InputState* prev_input_state
     return result;
 }
 
-InputState process_input(InputState* previous_input_state, float deltaTime) {
+InputState process_input(InputState* previous_input_state) {
     SDL_Event event;
     InputState new_input_state = *previous_input_state;
 
@@ -245,12 +245,10 @@ void main_loop() {
 
     while (!quit) {
         Uint32 currentFrameTime = SDL_GetTicks();
-        float delta_time = fmin(((currentFrameTime - lastFrameTime) / 1000.0f), 0.1f);
-        game_state.delta_time = delta_time;
 
         // Process input and send input state to server
         prev_input_state = input_state;
-        input_state = process_input(&prev_input_state, delta_time);
+        input_state = process_input(&prev_input_state);
         SDLNet_TCP_Send(server_socket, &input_state, sizeof(input_state));
 
         // Receive game state from server
@@ -277,7 +275,6 @@ void main_loop() {
         if (elapsedTime < targetFrameTime) {
             SDL_Delay(targetFrameTime - elapsedTime);
         }
-
         lastFrameTime = currentFrameTime;
     }
 

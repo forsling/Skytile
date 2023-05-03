@@ -22,9 +22,11 @@ typedef struct {
     GameState* game_state;
     World* world;
     SDL_mutex* game_state_mutex;
+    float* delta_time;
 } ClientData;
 
 World world;
+float delta_time;
 
 void add_new_player(GameState* game_state, World* world, int player_index) {
     int player_x = rand() % (world->layers[0].width + 1);
@@ -48,6 +50,7 @@ int handle_client(void* data) {
     World* world = client_data->world;
     int player_index = client_data->player_index;
     TCPsocket client_socket = client_data->socket;
+    float delta_time = *client_data->delta_time;
 
     // Send initial game state to the client
     InitialGameState initial_game_state = {
@@ -72,7 +75,7 @@ int handle_client(void* data) {
 
         // Process the received input state and update the game state
         SDL_LockMutex(client_data->game_state_mutex);
-        update(game_state, world, &input_state, player_index);
+        update(game_state, world, &input_state, player_index, delta_time);
         SDL_UnlockMutex(client_data->game_state_mutex);
 
         // Send the updated game state back to the client
@@ -125,7 +128,6 @@ int main(int argc, char *argv[]) {
     // Initialize game state
     GameState game_state;
     game_state.players_count = 0;
-    game_state.delta_time = 0.0f;
     memset(game_state.projectiles, 0, sizeof(game_state.projectiles));
     memset(game_state.players, 0, sizeof(game_state.players));
 
@@ -142,8 +144,7 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         Uint32 currentTickTime = SDL_GetTicks();
-        float delta_time = fmin(((currentTickTime - lastTickTime) / 1000.0f), 0.1f);
-        game_state.delta_time = delta_time;
+        delta_time = fmin(((currentTickTime - lastTickTime) / 1000.0f), 0.1f);
 
         TCPsocket client_socket = SDLNet_TCP_Accept(server_socket);
         if (client_socket) {
@@ -161,6 +162,7 @@ int main(int argc, char *argv[]) {
                 client_data->game_state = &game_state;
                 client_data->world = &world;
                 client_data->game_state_mutex = game_state_mutex;
+                client_data->delta_time = &delta_time;
                 client_threads[player_index] = SDL_CreateThread(handle_client, "ClientThread", (void*)client_data);
             } else {
                 printf("Server is full. Client connection rejected.\n");

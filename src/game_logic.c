@@ -25,16 +25,16 @@ static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_po
 static CellInfo* get_cells_for_vector(World* world, vec3 source, vec3 destination, int* num_cells);
 static vec3 get_furthest_legal_position(World* world, vec3 source, vec3 destination, float collision_buffer);
 
-void update(GameState* game_state, World* world, InputState* input_state, int player_index) {
+void update(GameState* game_state, World* world, InputState* input_state, int player_index, float delta_time) {
     Player* player = &game_state->players[player_index];
-    vec2 movement = process_input(player, input_state, game_state->delta_time);
+    vec2 movement = process_input(player, input_state, delta_time);
     process_mouse(player, input_state);
         
-    update_player_position(player, world, movement.x, movement.y, game_state->delta_time);
+    update_player_position(player, world, movement.x, movement.y, delta_time);
 
     // Update projectiles
     for (int i = 0; i < MAX_PROJECTILES; i++) {
-        update_projectile(world, &game_state->projectiles[i], game_state->delta_time);
+        update_projectile(world, &game_state->projectiles[i], delta_time);
     }
 
     if (input_state->mouse_button_1.is_down && !input_state->mouse_button_1.was_down) {
