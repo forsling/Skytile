@@ -15,7 +15,7 @@ const float MOUSE_SENSITIVITY = 0.001f;
 
 static vec2 process_input(Player* player, InputState* input_state, float delta_time);
 static void process_mouse(Player* player, InputState* input_state);
-static void update_death_timers(GameState* game_state, float delta_time);
+static void update_death_timers(GameState* game_state, World* world, float delta_time);
 
 static void calculate_projectile_direction(Player* player, vec3* direction);
 static void create_projectile(Projectile* projectiles, Player* player);
@@ -45,10 +45,10 @@ void update(GameState* game_state, World* world, InputState* input_state, int pl
 
     // Process projectile collisions and update death timers
     process_projectile_collisions(game_state, player, delta_time);
-    update_death_timers(game_state, delta_time);
+    update_death_timers(game_state, world, delta_time);
 }
 
-static void update_death_timers(GameState* game_state, float delta_time) {
+static void update_death_timers(GameState* game_state, World* world, float delta_time) {
     for (int i = 0; i < MAX_CLIENTS; i++) {
         Player* player = &game_state->players[i];
         if (!player->connected) {
@@ -57,8 +57,10 @@ static void update_death_timers(GameState* game_state, float delta_time) {
         if (player->death_timer > 0.0f) {
             player->death_timer -= delta_time;
             if (player->death_timer <= 0) {
+                printf("Player %d was resurrected \n", player->id);
                 player->death_timer = 0;
                 player->health = PLAYER_HEALTH;
+                player->position = get_random_world_pos(world);
             }
         }
     }
@@ -205,6 +207,7 @@ void process_projectile_collisions(GameState* game_state, Player* player, float 
             // Check if the player is dead
             if (player->health <= 0) {
                 player->death_timer = 8;
+                printf("Player %d killed Player %d \n", projectile->owner, player->id);
             }
 
             // Destroy the projectile

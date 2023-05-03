@@ -12,6 +12,7 @@
 #include "../game_logic.h"
 #include "../utils.h"
 #include "../settings.h"
+#include "../vector.h"
 
 #define BUFFER_SIZE 8192
 

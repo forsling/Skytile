@@ -1,8 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include "utils.h"
+#include <time.h>
 #include <SDL2/SDL_image.h>
+
+#include "utils.h"
+#include "vector.h"
+#include "game.h"
 
 bool enable_debuglog = false;
 
@@ -48,4 +53,15 @@ Uint32 get_pixel32(SDL_Surface* surface, int x, int y) {
         default:
             return 0;
     }
+}
+
+vec3 get_random_world_pos(World* world) {
+    int z = rand() % (world->num_layers + 1);
+    int x = rand() % (world->layers[0].width + 1);
+    int y = rand() % (world->layers[0].height + 1);
+    return (vec3) {
+        .x = x * CELL_XY_SCALE,
+        .y = y * CELL_XY_SCALE,
+        .z = z
+    };
 }
