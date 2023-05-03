@@ -18,7 +18,7 @@ typedef enum {
 
 void init_opengl();
 void render_face(float x, float y, float z, float width, float height, Direction direction, GLuint texture);
-void render_world(World* world, Player* player);
+void render_world(World* world, Player* player, GLuint test_texture);
 void render_players(Player* player, int current_player, int players_count, GLuint texture);
 
 GLuint load_texture(const char* filename);

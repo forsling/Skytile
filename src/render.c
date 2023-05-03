@@ -130,11 +130,13 @@ void render_players(Player* players, int current_player, int players_count, GLui
         if (i == current_player) {
             continue;
         }
-        render_player_texture(&players[i], texture);
+        if (players[i].alive) {
+            render_player_texture(&players[i], texture);
+        }
     }
 }
 
-void render_world(World* world, Player* player) {
+void render_world(World* world, Player* player, GLuint test_texture) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(90.0, (double)get_setting_int("screen_width") / (double)get_setting_int("screen_height"), 0.01, 500.0);
@@ -147,14 +149,12 @@ void render_world(World* world, Player* player) {
 
     Direction neighbor_dirs[] = {DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH};
 
-    bool render_reference_block = true;
-    if (render_reference_block) {
-
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, 2);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, 3);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, 2);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, 2);
-        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, 2);
+    if (test_texture != 0) {
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_UP, test_texture);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_XY_SCALE, DIR_DOWN, test_texture);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_NORTH, test_texture);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_WEST, test_texture);
+        render_face(-4, -4, 0, CELL_XY_SCALE, CELL_Z_SCALE, DIR_EAST, test_texture);
     }
 
     for (int z = 0; z < world->num_layers; z++) {

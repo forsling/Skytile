@@ -28,7 +28,18 @@ typedef struct {
 World world;
 float delta_time;
 
-void add_new_player(GameState* game_state, World* world, int player_index) {
+int add_new_player(GameState* game_state, World* world) {
+    int player_index = -1;
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (!game_state->players[i].connected) {
+            player_index = i;
+            break;
+        }
+    }
+    if (player_index < 0) {
+        return player_index;
+    }
+
     int player_x = rand() % (world->layers[0].width + 1);
     int player_y = rand() % (world->layers[0].height + 1);
     float player_height = CELL_Z_SCALE / 2;
@@ -40,8 +51,10 @@ void add_new_player(GameState* game_state, World* world, int player_index) {
         .speed = 10.0f,
         .jump_velocity = -8.0f,
         .size = 0.3 * CELL_XY_SCALE,
-        .alive = true
+        .alive = true,
+        .connected = true
     };
+    return player_index;
 }
 
 int handle_client(void* data) {
@@ -85,6 +98,7 @@ int handle_client(void* data) {
         }
     }
 
+    game_state->players[player_index].connected = false;
     SDLNet_TCP_Close(client_socket);
     printf("Client disconnected.\n");
     free(client_data);
@@ -132,8 +146,7 @@ int main(int argc, char *argv[]) {
     memset(game_state.players, 0, sizeof(game_state.players));
 
     // Prepare for multi-client handling
-    const int max_clients = 4;
-    SDL_Thread* client_threads[max_clients];
+    SDL_Thread* client_threads[MAX_CLIENTS];
 
     // Create a mutex for synchronizing access to the game state
     SDL_mutex* game_state_mutex = SDL_CreateMutex();
@@ -148,12 +161,9 @@ int main(int argc, char *argv[]) {
 
         TCPsocket client_socket = SDLNet_TCP_Accept(server_socket);
         if (client_socket) {
-            if (game_state.players_count < max_clients) {
+            int player_index = add_new_player(&game_state, &world);
+            if (player_index >= 0) {
                 printf("Client connected!\n");
-                int player_index = game_state.players_count++;
-
-                // Add new player to the game state
-                add_new_player(&game_state, &world, player_index);
 
                 // Create a new thread to handle the client connection
                 ClientData* client_data = (ClientData*)malloc(sizeof(ClientData));
