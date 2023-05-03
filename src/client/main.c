@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "./client.h"
-#include "settings.h"
+#include "../shared/settings.h"
 
 int main(int argc, char* argv[]) {
     if (!load_settings("client.txt", false)) {

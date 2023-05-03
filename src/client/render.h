@@ -3,9 +3,8 @@
 
 #include <GL/gl.h>
 #include <SDL2/SDL_image.h>
-#include "world.h"
 #include "client.h"
-#include "game_logic.h"
+#include "../shared/game.h"
 
 typedef enum {
     DIR_EAST,

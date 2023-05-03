@@ -2,7 +2,6 @@
 #define TEXTURE_HANDLER_H
 
 #include <SDL2/SDL.h>
-#include "world.h"
 
 typedef struct TextureInfo {
     GLuint floor_texture;

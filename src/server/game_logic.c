@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <assert.h>
-
+#include <math.h>
 #include "game_logic.h"
-#include "game.h"
-#include "vector.h"
 #include "world.h"
-#include "utils.h"
-#include "settings.h"
-#include "math.h"
+#include "../shared/game.h"
+#include "../shared/vector.h"
+#include "../shared/utils.h"
+#include "../shared/settings.h"
 
 #define MAX_CELLS 16
 
@@ -410,7 +409,6 @@ static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_po
         if (z_pos < (float)i * CELL_Z_SCALE) {
             if (cell->type == CELL_ROOM || cell->type == CELL_SOLID) {
                 *out_obstacle_z = (float)i * CELL_Z_SCALE;
-                //debuglog(1, "(zl %d) Found ceiling obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
                 return true;
             }
         }
@@ -418,7 +416,6 @@ static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_po
         //Check floors
         if (cell->type != CELL_VOID) {
             *out_obstacle_z = (float)i * CELL_Z_SCALE + 4;
-            //debuglog(1, "(zl %d) Found floor obstacle at %.2f (gridx: %d gridy: %d zlayer: %d z: %f) \n", i, *out_obstacle_z, cell_x, cell_y, z_layer, z_pos);
             return true;
         }
     }

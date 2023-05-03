@@ -59,6 +59,13 @@
         "sdl_net.h": "c",
         "game_logic.h": "c",
         "render.h": "c",
-        "sdl_mutex.h": "c"
+        "sdl_mutex.h": "c",
+        "game.h": "c",
+        "texture.h": "c",
+        "client.h": "c",
+        "vector.h": "c",
+        "settings.h": "c",
+        "string.h": "c",
+        "utils.h": "c"
     }
 }

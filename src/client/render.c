@@ -5,12 +5,12 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
-#include "game.h"
 #include "render.h"
-#include "world.h"
-#include "settings.h"
 #include "texture.h"
-#include "vector.h"
+#include "../shared/game.h"
+#include "../shared/settings.h"
+#include "../shared/vector.h"
+#include "../shared/utils.h"
 
 void init_opengl() {
     // Set swap interval for Vsync

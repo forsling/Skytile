@@ -2,7 +2,7 @@
 #ifndef GAME_LOGIC_H
 #define GAME_LOGIC_H
 
-#include "vector.h"
+#include "../shared/vector.h"
 #include "world.h"
 
 typedef struct {

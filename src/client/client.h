@@ -5,9 +5,7 @@
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_image.h>
 #include <stdbool.h>
-#include "world.h"
-#include "vector.h"
-#include "game_logic.h"
+#include "../shared/vector.h"
 
 // Engine initialization and cleanup functions
 bool init_engine();

@@ -55,6 +55,33 @@ Uint32 get_pixel32(SDL_Surface* surface, int x, int y) {
     }
 }
 
+Cell* get_cell(Layer* layer, int x, int y) {
+    if (is_out_of_xy_bounds(layer, x, y)) {
+        return NULL;
+    }
+    return &layer->cells[y][x];
+}
+
+bool is_out_of_xy_bounds(Layer* layer, int x, int y) {
+    return x < 0 || x >= layer->width || y < 0 || y >= layer->height;
+}
+
+bool is_within_xy_bounds(Layer* layer, int x, int y) {
+    return x >= 0 && x < layer->width && y >= 0 && y < layer->height;
+}
+
+bool get_world_cell(World* world, ivec3 grid_position, Cell** out_cell) {
+    if (grid_position.z < 0 || grid_position.z >= world->num_layers) {
+        return false;
+    }
+    Layer* layer = &world->layers[grid_position.z];
+    if (grid_position.y < 0 || grid_position.y >= layer->width || grid_position.x < 0 || grid_position.x >= layer->height) {
+        return false;
+    }
+    *out_cell = &layer->cells[grid_position.y][grid_position.x];
+    return true;
+}
+
 vec3 get_random_world_pos(World* world) {
     int z = rand() % (world->num_layers + 1);
     int x = rand() % (world->layers[0].width + 1);

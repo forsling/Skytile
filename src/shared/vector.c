@@ -1,6 +1,7 @@
+#include "game.h"
 #include "vector.h"
 #include "math.h"
-#include "world.h"
+#include "utils.h"
 
 // Calculate the length of a vec2 vector
 float vec2_length(vec2 v) {

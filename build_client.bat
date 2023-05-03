@@ -1,17 +1,15 @@
 set WORKSPACE_FOLDER=%cd%
 
 gcc -fdiagnostics-color=always -g ^
-%WORKSPACE_FOLDER%/src/main.c ^
-%WORKSPACE_FOLDER%/src/game.c ^
-%WORKSPACE_FOLDER%/src/client.c ^
-%WORKSPACE_FOLDER%/src/game_logic.c ^
-%WORKSPACE_FOLDER%/src/texture.c ^
-%WORKSPACE_FOLDER%/src/world.c ^
-%WORKSPACE_FOLDER%/src/render.c ^
-%WORKSPACE_FOLDER%/src/audio.c ^
-%WORKSPACE_FOLDER%/src/utils.c ^
-%WORKSPACE_FOLDER%/src/vector.c ^
-%WORKSPACE_FOLDER%/src/settings.c ^
+%WORKSPACE_FOLDER%/src/client/main.c ^
+%WORKSPACE_FOLDER%/src/client/client.c ^
+%WORKSPACE_FOLDER%/src/shared/game.c ^
+%WORKSPACE_FOLDER%/src/client/texture.c ^
+%WORKSPACE_FOLDER%/src/client/render.c ^
+%WORKSPACE_FOLDER%/src/client/audio.c ^
+%WORKSPACE_FOLDER%/src/shared/utils.c ^
+%WORKSPACE_FOLDER%/src/shared/vector.c ^
+%WORKSPACE_FOLDER%/src/shared/settings.c ^
 -o %WORKSPACE_FOLDER%/game.exe ^
 -I%WORKSPACE_FOLDER%/include ^
 -L%WORKSPACE_FOLDER%/lib ^

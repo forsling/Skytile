@@ -6,16 +6,14 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_net.h>
-
 #include "client.h"
-#include "game.h"
-#include "world.h"
-#include "vector.h"
-#include "utils.h"
 #include "render.h"
 #include "audio.h"
-#include "settings.h"
 #include "texture.h"
+#include "../shared/game.h"
+#include "../shared/vector.h"
+#include "../shared/utils.h"
+#include "../shared/settings.h"
 
 static bool quit = false;
 const bool DEBUG_LOG = true;
@@ -169,7 +167,10 @@ bool load_engine_assets(GameState* gamestate) {
 }
 
 void free_engine_assets() {
-    free_world(&world);
+    SDL_FreeSurface(base_fg_texture);
+    base_fg_texture = NULL;
+    SDL_FreeSurface(base_bg_texture);
+    base_bg_texture = NULL;
     audio_quit();
 }
 
@@ -271,8 +272,6 @@ void main_loop() {
             render_world(&world, player, test_texture);
             render_projectiles(&game_state, projectile_texture);
             render_players(game_state.players, player_id, MAX_CLIENTS, player_texture);
-        } else {
-            printf("Dead! \n");
         }
         SDL_GL_SwapWindow(window);
 

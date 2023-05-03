@@ -2,6 +2,8 @@
 #define VECTOR_H
 #include <SDL2/SDL_image.h>
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 typedef struct {
     float x, y;
 } vec2;

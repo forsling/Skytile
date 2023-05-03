@@ -8,11 +8,11 @@
 #include <time.h>
 #include <math.h>
 
-#include "../game.h"
-#include "../game_logic.h"
-#include "../utils.h"
-#include "../settings.h"
-#include "../vector.h"
+#include "game_logic.h"
+#include "../shared/game.h"
+#include "../shared/utils.h"
+#include "../shared/settings.h"
+#include "../shared/vector.h"
 
 #define BUFFER_SIZE 8192
 
