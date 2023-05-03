@@ -177,7 +177,7 @@ int parse_cell_definition(const char* line, Cell* def) {
             return 0;
         }
 
-        printf("Loaded cell definition: %s\n", name_str);
+        //printf("Loaded cell definition: %s\n", name_str);
 
         return 1;
     }
