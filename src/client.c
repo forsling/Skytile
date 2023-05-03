@@ -206,8 +206,8 @@ void main_loop() {
     InputState input_state = {0};
     InputState prev_input_state = {0};
 
-    const char* SERVER_HOSTNAME = "127.0.0.1";
-    const Uint16 SERVER_PORT = 12345;
+    const char* server_hostname = get_setting_string("server_host");
+    const Uint16 server_port = get_setting_int("server_port");
 
     // Set up texture handler
     init_texture_handler("cell_definitions.txt", base_bg_texture);
@@ -216,7 +216,7 @@ void main_loop() {
     IPaddress server_ip;
     TCPsocket server_socket = {0};
     while (!server_socket) {
-        if (SDLNet_ResolveHost(&server_ip, SERVER_HOSTNAME, SERVER_PORT) == -1) {
+        if (SDLNet_ResolveHost(&server_ip, server_hostname, server_port) == -1) {
             printf("Error resolving server IP: %s\n", SDLNet_GetError());
             return;
         } else {

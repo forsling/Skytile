@@ -13,7 +13,6 @@
 #include "../utils.h"
 #include "../settings.h"
 
-#define SERVER_PORT 12345
 #define BUFFER_SIZE 8192
 
 typedef struct {
@@ -106,6 +105,8 @@ int handle_client(void* data) {
 }
 
 int main(int argc, char *argv[]) {
+    initialize_default_server_settings();
+    int server_port = get_setting_int("server_port");
     srand(time(NULL));
 
     if (SDL_Init(0) == -1 || SDLNet_Init() == -1) {
@@ -119,7 +120,7 @@ int main(int argc, char *argv[]) {
     }
 
     IPaddress server_ip;
-    if (SDLNet_ResolveHost(&server_ip, NULL, SERVER_PORT) == -1) {
+    if (SDLNet_ResolveHost(&server_ip, NULL, server_port) == -1) {
         printf("Error resolving server IP: %s\n", SDLNet_GetError());
         return 1;
     }
@@ -130,7 +131,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    printf("Server listening on port %d...\n", SERVER_PORT);
+    printf("Server listening on port %d...\n", server_port);
 
     // Load level data
     const char* level_name = "darkchasm";

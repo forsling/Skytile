@@ -114,16 +114,21 @@ void write_settings(const char* file_name) {
 void initialize_default_settings() {
     set_setting("screen_width", SETTING_TYPE_INT, "1280");
     set_setting("screen_height", SETTING_TYPE_INT, "720");
-    set_setting("current_level", SETTING_TYPE_STRING, "darkchasm");
+
+    set_setting("server_host", SETTING_TYPE_STRING, "127.0.0.1");
+    set_setting("server_port", SETTING_TYPE_INT, "12333");
+
     set_setting("gravity", SETTING_TYPE_FLOAT, "15.0f");
     set_setting("free_mode", SETTING_TYPE_BOOL, "false");
     set_setting("player_pos_x", SETTING_TYPE_FLOAT, "5.0f");
     set_setting("player_pos_y", SETTING_TYPE_FLOAT, "5.0f");
     set_setting("player_pos_z", SETTING_TYPE_FLOAT, "-2.0f");
+
     set_setting("master_volume", SETTING_TYPE_FLOAT, "1.0f");
 }
 
 void initialize_default_server_settings() {
+    set_setting("server_port", SETTING_TYPE_INT, "12333");
     set_setting("current_level", SETTING_TYPE_STRING, "darkchasm");
     set_setting("gravity", SETTING_TYPE_FLOAT, "15.0f");
     set_setting("allow_free_mode", SETTING_TYPE_BOOL, "true");
