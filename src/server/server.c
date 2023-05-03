@@ -17,7 +17,7 @@
 
 typedef struct {
     TCPsocket socket;
-    int player_index;
+    Player* player;
     GameState* game_state;
     World* world;
     SDL_mutex* game_state_mutex;
@@ -27,7 +27,7 @@ typedef struct {
 World world;
 float delta_time;
 
-int add_new_player(GameState* game_state, World* world) {
+Player* add_new_player(GameState* game_state, World* world) {
     int player_index = -1;
     for (int i = 0; i < MAX_CLIENTS; i++) {
         if (!game_state->players[i].connected) {
@@ -36,13 +36,14 @@ int add_new_player(GameState* game_state, World* world) {
         }
     }
     if (player_index < 0) {
-        return player_index;
+        return NULL;
     }
 
     int player_x = rand() % (world->layers[0].width + 1);
     int player_y = rand() % (world->layers[0].height + 1);
     float player_height = CELL_Z_SCALE / 2;
-    game_state->players[player_index] = (Player){
+    game_state->players[player_index] = (Player) {
+        .id = player_index,
         .position.x = player_x,
         .position.y = player_y,
         .position.z = 4 - player_height,
@@ -50,24 +51,25 @@ int add_new_player(GameState* game_state, World* world) {
         .speed = 10.0f,
         .jump_velocity = -8.0f,
         .size = 0.3 * CELL_XY_SCALE,
-        .alive = true,
-        .connected = true
+        .death_timer = 0.0f,
+        .connected = true,
+        .health = 20
     };
-    return player_index;
+    return &game_state->players[player_index];
 }
 
 int handle_client(void* data) {
     ClientData* client_data = (ClientData*)data;
     GameState* game_state = client_data->game_state;
     World* world = client_data->world;
-    int player_index = client_data->player_index;
+    Player* player = client_data->player;
     TCPsocket client_socket = client_data->socket;
     float delta_time = *client_data->delta_time;
 
     // Send initial game state to the client
     InitialGameState initial_game_state = {
         .world = *world,
-        .player_id = player_index
+        .player_id = player->id
     };
     int sent_initial = SDLNet_TCP_Send(client_socket, &initial_game_state, sizeof(initial_game_state));
     if (sent_initial < sizeof(initial_game_state)) {
@@ -87,7 +89,7 @@ int handle_client(void* data) {
 
         // Process the received input state and update the game state
         SDL_LockMutex(client_data->game_state_mutex);
-        update(game_state, world, &input_state, player_index, delta_time);
+        update(game_state, world, &input_state, player->id, delta_time);
         SDL_UnlockMutex(client_data->game_state_mutex);
 
         // Send the updated game state back to the client
@@ -97,7 +99,7 @@ int handle_client(void* data) {
         }
     }
 
-    game_state->players[player_index].connected = false;
+    player->connected = false;
     SDLNet_TCP_Close(client_socket);
     printf("Client disconnected.\n");
     free(client_data);
@@ -162,19 +164,19 @@ int main(int argc, char *argv[]) {
 
         TCPsocket client_socket = SDLNet_TCP_Accept(server_socket);
         if (client_socket) {
-            int player_index = add_new_player(&game_state, &world);
-            if (player_index >= 0) {
+            Player* player = add_new_player(&game_state, &world);
+            if (player) {
                 printf("Client connected!\n");
 
                 // Create a new thread to handle the client connection
                 ClientData* client_data = (ClientData*)malloc(sizeof(ClientData));
                 client_data->socket = client_socket;
-                client_data->player_index = player_index;
+                client_data->player = player;
                 client_data->game_state = &game_state;
                 client_data->world = &world;
                 client_data->game_state_mutex = game_state_mutex;
                 client_data->delta_time = &delta_time;
-                client_threads[player_index] = SDL_CreateThread(handle_client, "ClientThread", (void*)client_data);
+                client_threads[player->id] = SDL_CreateThread(handle_client, "ClientThread", (void*)client_data);
             } else {
                 printf("Server is full. Client connection rejected.\n");
                 SDLNet_TCP_Close(client_socket);

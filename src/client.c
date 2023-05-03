@@ -267,9 +267,13 @@ void main_loop() {
 
         // Rendering
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        render_world(&world, player, test_texture);
-        render_projectiles(&game_state, projectile_texture);
-        render_players(game_state.players, player_id, MAX_CLIENTS, player_texture);
+        if (player->death_timer <= 0.0f) {
+            render_world(&world, player, test_texture);
+            render_projectiles(&game_state, projectile_texture);
+            render_players(game_state.players, player_id, MAX_CLIENTS, player_texture);
+        } else {
+            printf("Dead! \n");
+        }
         SDL_GL_SwapWindow(window);
 
         // Cap the framerate

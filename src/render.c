@@ -130,7 +130,7 @@ void render_players(Player* players, int current_player, int players_count, GLui
         if (i == current_player) {
             continue;
         }
-        if (players[i].alive) {
+        if (players[i].death_timer <= 0.0f) {
             render_player_texture(&players[i], texture);
         }
     }

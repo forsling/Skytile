@@ -15,10 +15,12 @@ const float MOUSE_SENSITIVITY = 0.001f;
 
 static vec2 process_input(Player* player, InputState* input_state, float delta_time);
 static void process_mouse(Player* player, InputState* input_state);
+static void update_death_timers(GameState* game_state, float delta_time);
 
 static void calculate_projectile_direction(Player* player, vec3* direction);
 static void create_projectile(Projectile* projectiles, Player* player);
 static void update_projectile(World* world, Projectile* projectile, float deltaTime);
+static void process_projectile_collisions(GameState* game_state, Player* player, float delta_time);
 
 static void update_player_position(Player* player, World* world, float dx, float dy, float deltaTime);
 static bool get_next_z_obstacle(World* world, int cell_x, int cell_y, float z_pos, float* out_obstacle_z);
@@ -29,7 +31,7 @@ void update(GameState* game_state, World* world, InputState* input_state, int pl
     Player* player = &game_state->players[player_index];
     vec2 movement = process_input(player, input_state, delta_time);
     process_mouse(player, input_state);
-        
+
     update_player_position(player, world, movement.x, movement.y, delta_time);
 
     // Update projectiles
@@ -40,8 +42,27 @@ void update(GameState* game_state, World* world, InputState* input_state, int pl
     if (input_state->mouse_button_1.is_down && !input_state->mouse_button_1.was_down) {
         create_projectile(game_state->projectiles, player);
     }
+
+    // Process projectile collisions and update death timers
+    process_projectile_collisions(game_state, player, delta_time);
+    update_death_timers(game_state, delta_time);
 }
 
+static void update_death_timers(GameState* game_state, float delta_time) {
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        Player* player = &game_state->players[i];
+        if (!player->connected) {
+            continue;
+        }
+        if (player->death_timer > 0.0f) {
+            player->death_timer -= delta_time;
+            if (player->death_timer <= 0) {
+                player->death_timer = 0;
+                player->health = PLAYER_HEALTH;
+            }
+        }
+    }
+}
 
 static vec2 process_input(Player* player, InputState* input_state, float delta_time) {
     vec2 movement = {0.0f, 0.0f};
@@ -107,6 +128,7 @@ static void create_projectile(Projectile* projectiles, Player* player) {
             proj->position = player->position;
             proj->speed = 20.0f;
             proj->size = 1.0f;
+            proj->owner = player->id,
             proj->ttl = 1000;
             proj->active = true;
             calculate_projectile_direction(player, &proj->direction);
@@ -158,6 +180,40 @@ static void update_projectile(World* world, Projectile* projectile, float deltaT
         }
     }
     projectile->position = new_pos;
+}
+
+void process_projectile_collisions(GameState* game_state, Player* player, float delta_time) {
+    if (!player->connected || player->death_timer > 0) {
+        return;
+    }
+
+    for (int i = 0; i < MAX_PROJECTILES; i++) {
+        Projectile* projectile  = &game_state->projectiles[i];
+        if (projectile->ttl <= 0 || !projectile->active || projectile->owner == player->id) {
+            continue;
+        }
+
+        // Calculate the distance between the player and the projectile
+        float distance = vec3_distance(player->position, projectile->position);
+        float collision_distance = player->size + projectile->size;
+
+        // Check for collision
+        if (distance <= collision_distance) {
+            // Update player health
+            player->health -= 1;
+
+            // Check if the player is dead
+            if (player->health <= 0) {
+                player->death_timer = 8;
+            }
+
+            // Destroy the projectile
+            projectile->active = false;
+            projectile->ttl = 0;
+
+            break; // No need to check for other collisions with this projectile
+        }
+    }
 }
 
 static void update_player_position(Player* player, World* world, float dx, float dy, float deltaTime) {

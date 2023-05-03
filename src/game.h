@@ -4,17 +4,20 @@
 #include <stdbool.h>
 #include "vector.h"
 
-#define MAX_PROJECTILES 128
+#define MAX_PROJECTILES 64
 #define MAX_LAYERS 6
 #define MAX_WIDTH 32
 #define MAX_HEIGHT 32
 #define MAX_PLAYERS 4
 #define MAX_CLIENTS 4
 
+#define PLAYER_HEALTH 8
+
 extern const int CELL_XY_SCALE;
 extern const int CELL_Z_SCALE;
 
 typedef struct Player {
+    int id;
     vec3 position;
     float pitch, yaw;
     float speed;
@@ -22,9 +25,10 @@ typedef struct Player {
     float jump_velocity;
     float height;
     float size;
+    float death_timer;
+    int health;
     bool free_mode;
     bool jumped;
-    bool alive;
     bool connected;
 } Player;
 
@@ -33,6 +37,7 @@ typedef struct Projectile {
     vec3 direction;
     float speed;
     float size;
+    int owner;
     int ttl;
     bool active;
 } Projectile;
