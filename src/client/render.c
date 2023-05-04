@@ -36,6 +36,47 @@ void init_opengl() {
     glLoadIdentity();
 }
 
+void set_orthographic_projection(float width, float height) {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, width, height, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
+void render_ui_texture(float x, float y, float width, float height, GLuint texture) {
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBegin(GL_QUADS);
+
+    glTexCoord2f(0.0f, 0.0f); glVertex2f(x, y);
+    glTexCoord2f(1.0f, 0.0f); glVertex2f(x + width, y);
+    glTexCoord2f(1.0f, 1.0f); glVertex2f(x + width, y + height);
+    glTexCoord2f(0.0f, 1.0f); glVertex2f(x, y + height);
+
+    glEnd();
+}
+
+void render_ui_elements(int health, GLuint health_icon_texture) {
+    // Set orthographic projection
+    int SCREEN_WIDTH = get_setting_int("screen_width");
+    int SCREEN_HEIGHT = get_setting_int("screen_height");
+    set_orthographic_projection(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    // Disable depth testing to render UI elements on top
+    glDisable(GL_DEPTH_TEST);
+
+    // Render health icon
+    float icon_size = 32.0f; // Adjust icon size as needed
+    for (int i = 0; i < health; i++) {
+        render_ui_texture(10 + i*icon_size, 10, icon_size, icon_size, health_icon_texture);
+    }
+
+    // Enable depth testing again for 3D rendering
+    glEnable(GL_DEPTH_TEST);
+}
+
+
+
 void render_face(float x, float y, float z, float width, float height, Direction direction, GLuint texture) {
     glBindTexture(GL_TEXTURE_2D, texture);
     glBegin(GL_QUADS);

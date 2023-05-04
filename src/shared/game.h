@@ -11,7 +11,7 @@
 #define MAX_PLAYERS 4
 #define MAX_CLIENTS 4
 
-#define PLAYER_HEALTH 8
+#define PLAYER_HEALTH 6
 
 extern const int CELL_XY_SCALE;
 extern const int CELL_Z_SCALE;

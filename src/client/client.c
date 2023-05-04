@@ -33,6 +33,7 @@ int sound_jump;
 GLuint projectile_texture;
 GLuint player_texture;
 GLuint test_texture;
+GLuint health_icon_texture;
 GameState game_state;
 World world;
 
@@ -147,6 +148,7 @@ bool load_engine_assets(GameState* gamestate) {
     projectile_texture = create_texture(base_fg_texture, 1088, 192, 32, 32);
     player_texture = create_texture(base_fg_texture, 32, 160, 32, 32);
     test_texture = create_texture(base_bg_texture, 512,128,32,32);
+    health_icon_texture = create_texture(base_fg_texture, 821, 0, 11, 9);
 
     sound_jump = audio_load_sound("assets/jump1.wav");
 
@@ -277,6 +279,10 @@ void main_loop() {
             render_projectiles(&game_state, projectile_texture);
             render_players(game_state.players, player_id, MAX_CLIENTS, player_texture);
         }
+
+        // Render UI elements
+        render_ui_elements(player->health, health_icon_texture);
+
         SDL_GL_SwapWindow(window);
 
         // Cap the framerate

@@ -54,7 +54,7 @@ Player* add_new_player(GameState* game_state, World* world) {
         .size = 0.3 * CELL_XY_SCALE,
         .death_timer = 0.0f,
         .connected = true,
-        .health = 20
+        .health = PLAYER_HEALTH
     };
     return &game_state->players[player_index];
 }
