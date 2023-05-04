@@ -93,7 +93,6 @@ ButtonState get_mouse_button_state(uint32_t button, InputState* prev_input_state
 }
 
 InputState process_input(InputState* previous_input_state) {
-    SDL_Event event;
     InputState new_input_state = *previous_input_state;
 
     // Process keyboard input
@@ -125,19 +124,6 @@ InputState process_input(InputState* previous_input_state) {
 
     new_input_state.ctrl.was_down = new_input_state.ctrl.is_down;
     new_input_state.ctrl.is_down = state[SDL_SCANCODE_LCTRL];
-
-    while (SDL_PollEvent(&event) != 0) {
-        switch (event.type) {
-            case SDL_QUIT:
-                quit = true;
-                break;
-            case SDL_KEYDOWN:
-                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-                    quit = true;
-                }
-                break;
-        }
-    }
 
     // Process mouse input
     int mouseX, mouseY;
@@ -197,6 +183,22 @@ void play_sounds(GameState* game_state, int player_id) {
     }
 }
 
+void poll_events() {
+    SDL_Event event;
+    while (SDL_PollEvent(&event) != 0) {
+        switch (event.type) {
+            case SDL_QUIT:
+                quit = true;
+                break;
+            case SDL_KEYDOWN:
+                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                    quit = true;
+                }
+                break;
+        }
+    }
+}
+
 void main_loop() {
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
@@ -226,7 +228,8 @@ void main_loop() {
         server_socket = SDLNet_TCP_Open(&server_ip);
         if (!server_socket) {
             printf("Unable to connect to server: %s\n", SDLNet_GetError());
-            SDL_Delay(2000);
+            poll_events();
+            SDL_Delay(1000);
         }
     }
 
@@ -240,14 +243,13 @@ void main_loop() {
         return;
     }
 
-    // Store the player ID
+    // Prepare for game start
     int player_id = initial_game_state.player_id;
-
-    // Copy over intial game state
     world = initial_game_state.world;
 
     while (!quit) {
         Uint32 currentFrameTime = SDL_GetTicks();
+        poll_events();
 
         // Process input and send input state to server
         prev_input_state = input_state;
