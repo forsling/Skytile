@@ -50,6 +50,7 @@ bool init_engine() {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         return false;
     }
+    SDL_HideWindow(window);
 
     // OpenGL
     gl_context = SDL_GL_CreateContext(window);
@@ -246,6 +247,7 @@ void main_loop() {
     // Prepare for game start
     int player_id = initial_game_state.player_id;
     world = initial_game_state.world;
+    SDL_ShowWindow(window);
 
     while (!quit) {
         Uint32 currentFrameTime = SDL_GetTicks();
